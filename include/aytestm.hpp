@@ -24,16 +24,17 @@
 #pragma once
 
 #include <cassert>
-#include <string>
 #include <ostream>
+#include <string>
+#include <string_view>
 #include <functional>
 #include <source_location>
 
 #define AYTTM_SRC_LOC std::source_location().current()
 
-//#define AYTEST_EXPRINFO(_handler, ...)                                         \
-//  aytest::detail::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); },   \
-//                           #__VA_ARGS__, _handler)
+#define AYTTM_EXPRINFO(...)                                                                        \
+    ittm::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, #__VA_ARGS__)
+
 
 namespace ittm {
 typedef struct test_failure_exception {} TestFailure;
@@ -61,30 +62,30 @@ inline std::string getExceptionInfo() {
     }
     return "";
 }
+}
 
-struct ExprInfo {
-    std::function<bool(void)> expr_;
-    
-    std::string expr_str_;
-    std::string handle_str_;
-
-    ExprInfo(std::function<bool(void)> _expr, char const * expr_str, char const * handle_str)
-        : expr_(_expr), expr_str_(expr_str), handle_str_(handle_str) {}
+class ExprInfo {
+public:
+    ExprInfo(std::function<bool(void)> _expr, std::string_view str_expr)
+        : m_expr(_expr), m_str_expr(str_expr) {}
 
     operator bool() const {
-        assert(expr_);
-        return bool(expr_);
+        assert(m_expr);
+        return bool(m_expr);
     }
 
     bool operator()() const {
-        assert(expr_);
-        return expr_();
+        assert(m_expr);
+        return m_expr();
     }
-};
 
-inline std::ostream & operator<<(std::ostream & ost, ExprInfo const & einfo) {
-    ost << einfo.handle_str_ << "( " << einfo.expr_str_ << " )";
-    return ost;
-}
-}
+    std::string_view expression() const {
+        return m_str_expr;
+    }
+
+private:
+    std::function<bool(void)> m_expr;
+
+    std::string_view m_str_expr;
+};
 }
