@@ -30,17 +30,18 @@
 #include <functional>
 #include <source_location>
 
-#define AYTTM_SRC_LOC std::source_location().current()
+#define AYTTM_SRC_LOC std::source_location::current()
 
 #define AYTTM_EXPRINFO(...)                                                                        \
-    ittm::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, #__VA_ARGS__)
+    aytest_mini::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, #__VA_ARGS__)
 
 
-namespace ittm {
+namespace aytest_mini {
 typedef struct test_failure_exception {} TestFailure;
 
 namespace detail {
-constexpr char const * kTabStr = "    ";
+constexpr char const * kStrEmpty = "";
+constexpr char const * kStrTab   = "    ";
 
 inline std::ostream & toStream(std::ostream & ost, std::source_location const & src_loc) {
     ost << src_loc.file_name() << "(" << src_loc.line() << ")";
@@ -62,11 +63,13 @@ inline std::string getExceptionInfo() {
     }
     return "";
 }
-}
 
-class ExprInfo {
+template <typename Func>
+class FuncInfo {
 public:
-    ExprInfo(std::function<bool(void)> _expr, std::string_view str_expr)
+    FuncInfo() = default;
+
+    explicit FuncInfo(Func _expr, std::string_view str_expr = std::string_view{kStrEmpty})
         : m_expr(_expr), m_str_expr(str_expr) {}
 
     operator bool() const {
@@ -74,9 +77,9 @@ public:
         return bool(m_expr);
     }
 
-    bool operator()() const {
+    bool operator()(auto... args) const {
         assert(m_expr);
-        return m_expr();
+        return m_expr(args...);
     }
 
     std::string_view expression() const {
@@ -84,8 +87,15 @@ public:
     }
 
 private:
-    std::function<bool(void)> m_expr;
+    Func m_expr;
 
     std::string_view m_str_expr;
 };
+}
+
+using ExprInfo    = detail::FuncInfo<std::function<bool(void)>>;
+using EvalInfo    = detail::FuncInfo<std::function<bool(ExprInfo const &)>>;
+using HandlerInfo = detail::FuncInfo<std::function<bool(bool)>>;
+
+
 }
