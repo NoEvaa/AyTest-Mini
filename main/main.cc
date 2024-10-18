@@ -1,6 +1,9 @@
 #include <aytestm.hpp>
+#include <functional>
 #include <iostream>
 #include <source_location>
+
+#include <algorithm>
 
 #define AA(macro, ...) 
 #define CHECK(...)
@@ -9,41 +12,39 @@
 
 namespace aytest_mini {
 class TestContext;
-class TestCase;
-
-class TestExpr {
+class TestCase {
 public:
-    explicit TestExpr(std::source_location const & src_loc) : m_src_loc(src_loc) {} 
-
-    TestExpr & bindExpr(ExprInfo const & expr_info) {
-        m_expr = expr_info;
-        return *this;
+    void bindStream(std::ostream & ost) {
+        m_p_ost = &ost;
     }
 
-    TestExpr & bindEval(EvalInfo const & eval_info) {
-        m_eval = eval_info;
-        return *this;
+    std::ostream & getStream() {
+        assert(m_p_ost);
+        return *m_p_ost;
     }
 
-    TestExpr & bindHandler(HandlerInfo const & handler_info) {
-        m_handler = handler_info;
-        return *this;
-    }
+void run() {
 
-    bool run() const {
-        if (!m_expr) {
-            throw TestFailure{};
+    [&](){
+        using namespace aytest_mini;
+        auto src_loc = AYTTM_SRC_LOC;
+        auto expr = TestExpr(AYTTM_EXPRINFO(1 < 2))
+            .bindEval(EvalInfo{nullptr})
+            .bindHandler(HandlerInfo{nullptr});
+        auto & ost = this->getStream();
+        try {
+            expr.run();
+        } catch (TestFailure const & e) {
+            e.what();
+        } catch (std::exception const & e) {
+            e.what();
         }
-        bool b_res = m_eval ? m_eval(m_expr) : m_expr();
-        return m_handler ? m_handler(b_res) : b_res;
-    }
-    
-private:
-    std::source_location m_src_loc;
+    }();
 
-    ExprInfo    m_expr;
-    EvalInfo    m_eval;
-    HandlerInfo m_handler;
+
+    }
+private:
+    std::ostream * m_p_ost;
 };
 
 bool testNoThrow(ExprInfo const & einfo) {
@@ -60,16 +61,11 @@ bool testNoThrow(ExprInfo const & einfo) {
 
 }
 
+
 int main()
 {
-    
-
-    [](){
-
-    }();
-
     auto ei = AYTTM_EXPRINFO(1 < 2);
-    std::cout << ei.expression() << std::endl;
+    std::cout << ei.info() << std::endl;
 
     std::cout << ei() << std::endl;
 
