@@ -24,6 +24,7 @@
 #pragma once
 
 #include <cassert>
+#include <memory>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -41,21 +42,25 @@ namespace detail {
 constexpr char const * kStrEmpty = "";
 constexpr char const * kStrTab   = "    ";
 }
-typedef struct test_failure_exception {
-    test_failure_exception() = default;
-    
-    explicit test_failure_exception(char const * msg) : m_p_msg(msg) {}
-
-    char const * what() const noexcept {
-        return m_p_msg ? m_p_msg : detail::kStrEmpty;
+typedef struct test_exception {
+    test_exception() = default; 
+    explicit test_exception(std::string const & msg) : m_msg(msg) {}
+    std::string const & what() const noexcept {
+        return m_msg;
     }
-
 private:
-    char const * m_p_msg = nullptr;
-} TestFailure;
+    std::string m_msg;
+} TestException;
+typedef struct test_termination : TestException {
+    test_termination() = default;
+    explicit test_termination(std::string const & msg) : TestException(msg) {}
+} TestTermination;
+typedef struct test_output : TestException {
+    explicit test_output(std::string const & msg) : TestException(msg) {}
+} TestOutput;
 
 namespace detail {
-inline std::ostream & toStream(std::ostream & ost, std::source_location const & src_loc) {
+inline std::ostream & outputToStream(std::ostream & ost, std::source_location const & src_loc) {
     ost << src_loc.file_name() << "(" << src_loc.line() << ")";
     return ost;
 }
@@ -66,7 +71,7 @@ inline std::string getExceptionInfo() {
         if (ep) {
             std::rethrow_exception(ep);
         }
-    } catch (test_failure_exception const &) {
+    } catch (test_exception const &) {
         return "Test failed.";
     } catch (std::exception const & e) {
         return e.what();
@@ -80,26 +85,20 @@ template <typename Func>
 class FuncInfo {
 public:
     FuncInfo() = default;
-
     explicit FuncInfo(Func _fn, std::string_view str_info = std::string_view{kStrEmpty})
         : m_fn(_fn), m_str_info(str_info) {}
-
     operator bool() const {
         return bool(m_fn);
     }
-
     bool operator()(auto... args) const {
         assert(m_fn);
         return m_fn(args...);
     }
-
     std::string_view const & info() const {
         return m_str_info;
     }
-
 private:
-    Func m_fn;
-
+    Func             m_fn;
     std::string_view m_str_info;
 };
 }
@@ -124,18 +123,18 @@ public:
 
     bool run() const {
         if (!m_expr) {
-            throw TestFailure{};
+            throw TestException{"No test expression."};
         }
         bool b_res = m_eval ? m_eval(m_expr) : m_expr();
         return m_handler ? m_handler(b_res) : b_res;
     }
 
-    std::ostream & toStream(std::ostream & ost) {
+    std::ostream & outputToStream(std::ostream & ost) {
         if (m_handler.info().size()) {
-            ost <<  m_handler.info() << "( ";
+            ost << m_handler.info() << "( ";
         }
         if (m_eval.info().size()) {
-            ost <<  m_eval.info() << "( ";
+            ost << m_eval.info() << "( ";
         }
         ost << m_expr.info();
         if (m_eval.info().size()) {
