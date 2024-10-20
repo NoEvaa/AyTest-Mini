@@ -24,31 +24,27 @@ bool testNoThrow(ExprInfo const & einfo) {
     return true;
 }
 
-
 class TestCase {
 public:
     virtual ~TestCase() = default;
 
-    void setSrcLoc(std::source_location const & src_loc) {
+    void AYTTM_BUILTIN(setSrcLoc)(std::source_location const & src_loc) {
         m_src_loc = src_loc;
     }
-    
-    void bindStream(std::ostream & ost) {
+    void AYTTM_BUILTIN(bindStream)(std::ostream & ost) {
         m_p_ost = &ost;
     }
-    void unbindStream() {
+    void AYTTM_BUILTIN(unbindStream)() {
         m_p_ost = nullptr;
     }
-    std::ostream & getStream() {
+    std::ostream & AYTTM_BUILTIN(getStream)() {
         assert(m_p_ost);
         return *m_p_ost;
     }
-
-    virtual void run() = 0;
+    virtual void AYTTM_BUILTIN(run)() = 0;
 
 private:
-    std::ostream * m_p_ost;
-
+    std::ostream *       m_p_ost;
     std::source_location m_src_loc;
 };
 
@@ -59,28 +55,29 @@ TestCases &  getTestCases() {
     return s_test_cases;
 }
 
-class __aytestm__builtin__TestCase1 : public TestCase {
+class AYTTM_BUILTIN(TestCase1) : public TestCase {
 public:
-    void run() override;
+    void AYTTM_BUILTIN(run)() override;
 };
 namespace {
-static int __aytestm__builtin__i__TestCase1 = [](){
-    auto p_tcase = std::make_shared<__aytestm__builtin__TestCase1>();
-    p_tcase->setSrcLoc(AYTTM_SRC_LOC);
+static int AYTTM_BUILTIN(i__TestCase1) = [](){
+    auto p_tcase = std::make_shared<AYTTM_BUILTIN(TestCase1)>();
+    p_tcase->AYTTM_BUILTIN(setSrcLoc)(AYTTM_SRC_LOC);
     getTestCases().push_back(std::static_pointer_cast<TestCase>(p_tcase));
     return 0;
 }();
 }
-void __aytestm__builtin__TestCase1::run() {
+void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(run)() {
     [&](){
         using namespace aytest_mini;
-        auto __aytestm__builtin__src_loc = AYTTM_SRC_LOC;
-        auto __aytestm__builtin__expr = TestExpr(AYTTM_EXPRINFO(1 < 2))
+        auto AYTTM_BUILTIN(src_loc) = AYTTM_SRC_LOC;
+        auto AYTTM_BUILTIN(expr) = TestExpr(AYTTM_EXPRINFO(1 < 2))
             .bindEval(EvalInfo{nullptr})
             .bindHandler(HandlerInfo{nullptr});
-        auto & __aytestm__builtin__ost = this->getStream();
+        //auto & __aytestm__builtin__ost = this->getStream();
         try {
-            if (!__aytestm__builtin__expr.run()) {
+            if (!AYTTM_BUILTIN(expr).run()) {
+
             }
         } catch (TestTermination const & e) {
         } catch (std::exception const & e) {
@@ -92,7 +89,7 @@ void __aytestm__builtin__TestCase1::run() {
 
 int main()
 {
-
+    std::cout << typeid(aytest_mini::AYTTM_BUILTIN(TestCase1)).name() << std::endl;
     auto ei = AYTTM_EXPRINFO(1 < 2);
     std::cout << ei.info() << std::endl;
 

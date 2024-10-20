@@ -32,9 +32,12 @@
 #include <source_location>
 
 #define AYTTM_SRC_LOC std::source_location::current()
-
 #define AYTTM_EXPRINFO(...)                                                                        \
     aytest_mini::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, #__VA_ARGS__)
+
+#define AYTTM_CAT(a, b) a##b
+#define AYTTM_BUILTIN(_n) AYTTM_CAT(__aytestm__builtin__, _n)
+
 
 
 namespace aytest_mini {
