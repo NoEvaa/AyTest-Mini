@@ -60,7 +60,7 @@ public:
     void AYTTM_BUILTIN(run)() override;
 };
 namespace {
-static int AYTTM_BUILTIN(i__TestCase1) = [](){
+static int AYTTM_BUILTIN(s_i_TestCase1) = [](){
     auto p_tcase = std::make_shared<AYTTM_BUILTIN(TestCase1)>();
     p_tcase->AYTTM_BUILTIN(setSrcLoc)(AYTTM_SRC_LOC);
     getTestCases().push_back(std::static_pointer_cast<TestCase>(p_tcase));
@@ -71,7 +71,7 @@ void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(run)() {
     [&](){
         using namespace aytest_mini;
         auto AYTTM_BUILTIN(src_loc) = AYTTM_SRC_LOC;
-        auto AYTTM_BUILTIN(expr) = TestExpr(AYTTM_EXPRINFO(1 < 2))
+        auto AYTTM_BUILTIN(expr) = TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
             .bindEval(EvalInfo{nullptr})
             .bindHandler(HandlerInfo{nullptr});
         //auto & __aytestm__builtin__ost = this->getStream();
@@ -89,11 +89,11 @@ void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(run)() {
 
 int main()
 {
-    std::cout << typeid(aytest_mini::AYTTM_BUILTIN(TestCase1)).name() << std::endl;
-    auto ei = AYTTM_EXPRINFO(1 < 2);
-    std::cout << ei.info() << std::endl;
-
-    std::cout << ei() << std::endl;
+    using namespace aytest_mini;
+    auto AYTTM_BUILTIN(expr) = TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
+            .bindEval(EvalInfo{nullptr, "THROW"})
+            .bindHandler(HandlerInfo{nullptr, "CHECK"});
+    AYTTM_BUILTIN(expr).outputToStream(std::cout) << std::endl;
 
     auto sl = AYTTM_SRC_LOC;
     std::cout << sl.file_name() << std::endl;

@@ -31,12 +31,20 @@
 #include <functional>
 #include <source_location>
 
-#define AYTTM_SRC_LOC std::source_location::current()
-#define AYTTM_EXPRINFO(...)                                                                        \
-    aytest_mini::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, #__VA_ARGS__)
+#define AYTTM_CAT(a, b)  a##b
+#define AYTTM_CAT1(a, b) AYTTM_CAT(a, b)
+#define AYTTM_CAT2(a, b) AYTTM_CAT1(a, b)
+#define AYTTM_CAT3(a, b) AYTTM_CAT2(a, b)
 
-#define AYTTM_CAT(a, b) a##b
 #define AYTTM_BUILTIN(_n) AYTTM_CAT(__aytestm__builtin__, _n)
+
+#define AYTTM_SRC_LOC std::source_location::current()
+
+#define AYTTM_EXPRINFO_BOOL(...)                                                                   \
+    aytest_mini::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, #__VA_ARGS__)
+#define AYTTM_EXPRINFO_VOID(...)                                                                   \
+    aytest_mini::ExprInfo([&]() { static_cast<void>(__VA_ARGS__); return true; }, #__VA_ARGS__)
+
 
 
 
@@ -88,7 +96,7 @@ template <typename Func>
 class FuncInfo {
 public:
     FuncInfo() = default;
-    explicit FuncInfo(Func _fn, std::string_view str_info = std::string_view{kStrEmpty})
+    explicit FuncInfo(Func _fn, std::string_view str_info = std::string_view{ kStrEmpty })
         : m_fn(_fn), m_str_info(str_info) {}
     operator bool() const {
         return bool(m_fn);
@@ -133,18 +141,21 @@ public:
     }
 
     std::ostream & outputToStream(std::ostream & ost) {
-        if (m_handler.info().size()) {
-            ost << m_handler.info() << "( ";
+        bool b_has_handler = m_handler.info().size();
+        bool b_has_eval    = m_eval.info().size();
+        if (b_has_handler) {
+            ost << m_handler.info();
+            if (b_has_eval) {
+                ost << '_';
+            }
         }
-        if (m_eval.info().size()) {
-            ost << m_eval.info() << "( ";
+        if (b_has_eval) {
+            ost << m_eval.info();
         }
-        ost << m_expr.info();
-        if (m_eval.info().size()) {
-            ost << " )";
-        }
-        if (m_handler.info().size()) {
-            ost << " )";
+        if (b_has_handler || b_has_eval) {
+            ost << "( " << m_expr.info() << " )";
+        } else {
+            ost << m_expr.info();
         }
         return ost;
     }
