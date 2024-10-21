@@ -102,8 +102,11 @@ public:
         return bool(m_fn);
     }
     bool operator()(auto... args) const {
-        assert(m_fn);
-        return m_fn(args...);
+        if (m_fn) {
+            return m_fn(args...);
+        }
+        assert(0);
+        return false;
     }
     std::string_view const & info() const {
         return m_str_info;
@@ -159,12 +162,34 @@ public:
         }
         return ost;
     }
-    
+ 
 private:
     ExprInfo    m_expr;
     EvalInfo    m_eval;
     HandlerInfo m_handler;
 };
 
+inline bool handleRequire(bool b) {
+    if (!b) {
+        throw TestTermination{};
+    }
+    return true;
+}
 
+inline bool evalNoThrow(ExprInfo const & expr) {
+    try {
+        return expr();
+    } catch (...) {
+        return false;
+    }
+}
+
+inline bool evalThrow(ExprInfo const & expr) {
+    try {
+        expr();
+    } catch (...) {
+        return true;
+    }
+    return false;
+}
 }
