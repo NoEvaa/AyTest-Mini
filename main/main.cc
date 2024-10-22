@@ -6,67 +6,62 @@
 
 #include <algorithm>
 
-#define AA(macro, ...) 
-#define CHECK(...)
-
 // 4567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 
 namespace aytest_mini {
-
-
-class TestCase {
+class TestGroup {
 public:
-    explicit TestCase(char const * case_name) : m_name(case_name) {}
-    virtual ~TestCase() = default;
+    void run() {
+        for (auto & tcase : m_cases) {
+            try {
+                tcase->AYTTM_BUILTIN(run)();
+            } catch (...) {
 
-    void AYTTM_BUILTIN(setSrcLoc)(std::source_location const & src_loc) {
-        m_src_loc = src_loc;
+            }
+        }
     }
-    void AYTTM_BUILTIN(bindStream)(std::ostream & ost) {
-        m_p_ost = &ost;
+
+    void appendCase(std::shared_ptr<TestCase> p_tc) {
+        assert(p_tc);
+        m_cases.push_back(p_tc);
     }
-    void AYTTM_BUILTIN(unbindStream)() {
-        m_p_ost = nullptr;
-    }
-    std::ostream & AYTTM_BUILTIN(getStream)() {
-        assert(m_p_ost);
-        return *m_p_ost;
-    }
-    virtual void AYTTM_BUILTIN(run)() = 0;
-
-private:
-    std::string_view     m_name;
-    std::source_location m_src_loc;
-    std::ostream *       m_p_ost;
-};
-
-using TestCases = std::vector<std::shared_ptr<TestCase>>;
-
-class TestContext {
-public:
-    void run() {}
-
-    void appendCase(std::shared_ptr<TestCase> p_tc) {}
 private:
     TestCases m_cases;
 };
 
-TestCases &  getTestCases() {
-    static TestCases s_test_cases;
-    return s_test_cases;
-}
+
+class TestContext {
+public:
+    //static void run();
+
+    static TestGroup & getGroup() {
+        static TestGroup s_group;
+        return s_group;
+    }
+private:
+    std::ostream * m_p_ost = nullptr;
+};
+
 
 class AYTTM_BUILTIN(TestCase1) : public TestCase {
 public:
     void AYTTM_BUILTIN(run)() override;
 };
-namespace {
-static int AYTTM_BUILTIN(s_i_TestCase1) = [](){
-    auto p_tcase = std::make_shared<AYTTM_BUILTIN(TestCase1)>("case 1");
-    p_tcase->AYTTM_BUILTIN(setSrcLoc)(AYTTM_SRC_LOC);
-    getTestCases().push_back(std::static_pointer_cast<TestCase>(p_tcase));
+
+namespace detail {
+template <typename T>
+int initTestCase(char const * p_name, std::source_location const & src_loc) {
+    auto p_tcase = std::make_shared<T>();
+    p_tcase->AYTTM_BUILTIN(setName)(p_name);
+    p_tcase->AYTTM_BUILTIN(setSrcLoc)(src_loc);
+    TestContext::getGroup().appendCase(std::static_pointer_cast<TestCase>(p_tcase));
     return 0;
-}();
+}
+}
+
+namespace {
+static int AYTTM_BUILTIN(s_i_TestCase1) =
+    aytest_mini::detail::initTestCase<AYTTM_BUILTIN(TestCase1)>("case 1", AYTTM_SRC_LOC);
 }
 void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(run)() {
     [&](){

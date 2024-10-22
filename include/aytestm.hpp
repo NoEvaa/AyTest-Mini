@@ -34,7 +34,6 @@
 #define AYTTM_CAT(a, b)  a##b
 #define AYTTM_CAT1(a, b) AYTTM_CAT(a, b)
 #define AYTTM_CAT2(a, b) AYTTM_CAT1(a, b)
-#define AYTTM_CAT3(a, b) AYTTM_CAT2(a, b)
 
 #define AYTTM_BUILTIN(_n) AYTTM_CAT(__aytestm__builtin__, _n)
 
@@ -51,7 +50,7 @@
 namespace aytest_mini {
 namespace detail {
 constexpr char const * kStrEmpty = "";
-constexpr char const * kStrTab   = "    ";
+constexpr char const * kStrTab   = "  ";
 }
 typedef struct test_exception {
     test_exception() = default; 
@@ -82,8 +81,8 @@ inline std::string getExceptionInfo() {
         if (ep) {
             std::rethrow_exception(ep);
         }
-    } catch (test_exception const &) {
-        return "Test failed.";
+    } catch (test_exception const & e) {
+        return e.what();
     } catch (std::exception const & e) {
         return e.what();
     } catch (...) {
@@ -169,13 +168,52 @@ private:
     HandlerInfo m_handler;
 };
 
+struct TestCount {
+    std::size_t total_  = 0;
+    std::size_t passed_ = 0;
+    std::size_t failed_ = 0;
+
+    TestCount & operator+=(TestCount const & rhs) {
+        total_  += rhs.total_;
+        passed_ += rhs.passed_;
+        failed_ += rhs.failed_;
+        return *this;
+    }
+};
+
+class TestCase {
+public:
+    virtual ~TestCase() = default;
+
+    void AYTTM_BUILTIN(setName)(char const * case_name) {
+        m_name = case_name;
+    }
+    void AYTTM_BUILTIN(setSrcLoc)(std::source_location const & src_loc) {
+        m_src_loc = src_loc;
+    }
+
+    virtual void AYTTM_BUILTIN(run)() = 0;
+
+    std::ostream & AYTTM_BUILTIN(outputToStream)(std::ostream & ost) {
+        detail::outputToStream(ost, m_src_loc) << std::endl;
+        ost << "TEST CASE: " << m_name;
+        return ost;
+    }
+
+private:
+    std::string_view     m_name;
+    std::source_location m_src_loc;
+    TestCount            m_cnt;
+};
+
+using TestCases = std::vector<std::shared_ptr<TestCase>>;
+
 inline bool handleRequire(bool b) {
     if (!b) {
         throw TestTermination{};
     }
     return true;
 }
-
 inline bool evalNoThrow(ExprInfo const & expr) {
     try {
         return expr();
@@ -183,11 +221,19 @@ inline bool evalNoThrow(ExprInfo const & expr) {
         return false;
     }
 }
-
 inline bool evalThrow(ExprInfo const & expr) {
     try {
         expr();
     } catch (...) {
+        return true;
+    }
+    return false;
+}
+template <typename ExTy>
+bool evalThrowAs(ExprInfo const & expr) {
+    try {
+        expr();
+    } catch (ExTy const &) {
         return true;
     }
     return false;
