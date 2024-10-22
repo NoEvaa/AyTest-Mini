@@ -128,7 +128,6 @@ public:
         m_eval = eval_info;
         return *this;
     }
-
     TestExpr & bindHandler(HandlerInfo const & handler_info) {
         m_handler = handler_info;
         return *this;
@@ -196,8 +195,20 @@ public:
 
     std::ostream & AYTTM_BUILTIN(outputToStream)(std::ostream & ost) {
         detail::outputToStream(ost, m_src_loc) << std::endl;
-        ost << "TEST CASE: " << m_name;
+        ost << "TEST CASE: " << m_name << std::endl;
         return ost;
+    }
+
+    void AYTTM_BUILTIN(logResult)(bool b_res) {
+        m_cnt.total_++;
+        if (b_res) {
+            m_cnt.passed_++;
+        } else {
+            m_cnt.failed_++;
+        }
+    }
+    TestCount const & AYTTM_BUILTIN(getTestCount)() {
+        return m_cnt;
     }
 
 private:
@@ -235,6 +246,8 @@ bool evalThrowAs(ExprInfo const & expr) {
         expr();
     } catch (ExTy const &) {
         return true;
+    } catch (...) {
+        return false;
     }
     return false;
 }
