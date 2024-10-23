@@ -9,13 +9,13 @@ namespace aytest_mini {
 
 class AYTTM_BUILTIN(TestCase1) : public aytest_mini::TestCase {
 public:
-    void AYTTM_BUILTIN(run)() override;
+    void AYTTM_BUILTIN(runImpl)() override;
 };
 namespace {
 static int AYTTM_BUILTIN(s_i_TestCase1) =
     aytest_mini::initTestCase<AYTTM_BUILTIN(TestCase1)>("case 1", AYTTM_SRC_LOC);
 }
-void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(run)() {
+void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(runImpl)() {
     this->AYTTM_BUILTIN(invokeExpr)(
         aytest_mini::TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
             .bindEval(aytest_mini::EvalInfo{nullptr})
