@@ -12,9 +12,9 @@ namespace aytest_mini {
 class TestGroup {
 public:
     void run() {
-        for (auto & tcase : m_cases) {
+        for (auto & p_tcase : m_cases) {
             try {
-                tcase->AYTTM_BUILTIN(run)();
+                p_tcase->AYTTM_BUILTIN(run)();
             } catch (...) {
 
             }
@@ -69,7 +69,7 @@ void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(run)() {
         auto AYTTM_BUILTIN(src_loc) = AYTTM_SRC_LOC;
         auto AYTTM_BUILTIN(expr) = TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
             .bindEval(EvalInfo{nullptr})
-            .bindHandler(HandlerInfo{nullptr});
+            .bindHandler(EvalInfo{nullptr});
         //auto & AYTTM_BUILTIN(ost)= this->getStream();
         try {
             if (!AYTTM_BUILTIN(expr).run()) {
@@ -89,7 +89,7 @@ int main()
     using namespace aytest_mini;
     auto AYTTM_BUILTIN(expr) = TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
             .bindEval(EvalInfo{nullptr, "THROW"})
-            .bindHandler(HandlerInfo{nullptr, "CHECK"});
+            .bindHandler(EvalInfo{nullptr, "CHECK"});
     AYTTM_BUILTIN(expr).outputToStream(std::cout) << std::endl;
 
     auto sl = AYTTM_SRC_LOC;

@@ -61,25 +61,25 @@ typedef struct test_exception {
 private:
     std::string m_msg;
 } TestException;
+typedef struct test_output : TestException {
+    explicit test_output(std::string const & msg) : TestException(msg) {}
+} TestOutput;
 typedef struct test_termination : TestException {
     test_termination() = default;
     explicit test_termination(std::string const & msg) : TestException(msg) {}
 } TestTermination;
-typedef struct test_output : TestException {
-    explicit test_output(std::string const & msg) : TestException(msg) {}
-} TestOutput;
 
 namespace detail {
-inline std::ostream & outputToStream(std::ostream & ost, std::source_location const & src_loc) {
-    ost << src_loc.file_name() << "(" << src_loc.line() << ")";
-    return ost;
+template <typename T>
+T const & exception_cast(auto const & ex) {
+    return static_cast<T const &>(static_cast<TestException const &>(ex));
 }
 
 inline std::string getExceptionInfo() {
     try {
-        auto ep = std::current_exception();
-        if (ep) {
-            std::rethrow_exception(ep);
+        auto p_e = std::current_exception();
+        if (p_e) {
+            std::rethrow_exception(p_e);
         }
     } catch (test_exception const & e) {
         return e.what();
@@ -89,6 +89,11 @@ inline std::string getExceptionInfo() {
         return "Unknown exception.";
     }
     return "";
+}
+
+inline std::ostream & outputToStream(std::ostream & ost, std::source_location const & src_loc) {
+    ost << src_loc.file_name() << "(" << src_loc.line() << ")";
+    return ost;
 }
 
 template <typename Func>
@@ -116,19 +121,18 @@ private:
 };
 }
 
-using ExprInfo    = detail::FuncInfo<std::function<bool(void)>>;
-using EvalInfo    = detail::FuncInfo<std::function<bool(ExprInfo const &)>>;
-using HandlerInfo = detail::FuncInfo<std::function<bool(bool)>>;
+using ExprInfo = detail::FuncInfo<std::function<bool(void)>>;
+using EvalInfo = detail::FuncInfo<std::function<bool(ExprInfo const &)>>;
 
 class TestExpr {
 public:
-    explicit TestExpr(ExprInfo const & expr_info) : m_expr(expr_info) { }
+    explicit TestExpr(ExprInfo const & expr_info) : m_expr(expr_info) {}
 
     TestExpr & bindEval(EvalInfo const & eval_info) {
         m_eval = eval_info;
         return *this;
     }
-    TestExpr & bindHandler(HandlerInfo const & handler_info) {
+    TestExpr & bindHandler(EvalInfo const & handler_info) {
         m_handler = handler_info;
         return *this;
     }
@@ -137,23 +141,25 @@ public:
         if (!m_expr) {
             throw TestException{"No test expression."};
         }
-        bool b_res = m_eval ? m_eval(m_expr) : m_expr();
-        return m_handler ? m_handler(b_res) : b_res;
+        auto eval_helper = ExprInfo{[this]() {
+            return this->m_eval ? this->m_eval(this->m_expr) : this->m_expr();
+        }};
+        return m_handler ? m_handler(eval_helper) : eval_helper();
     }
 
     std::ostream & outputToStream(std::ostream & ost) {
-        bool b_has_handler = m_handler.info().size();
-        bool b_has_eval    = m_eval.info().size();
-        if (b_has_handler) {
+        bool b_exist_handler = m_handler.info().size();
+        bool b_exist_eval    = m_eval.info().size();
+        if (b_exist_handler) {
             ost << m_handler.info();
-            if (b_has_eval) {
+            if (b_exist_eval) {
                 ost << '_';
             }
         }
-        if (b_has_eval) {
+        if (b_exist_eval) {
             ost << m_eval.info();
         }
-        if (b_has_handler || b_has_eval) {
+        if (b_exist_handler || b_exist_eval) {
             ost << "( " << m_expr.info() << " )";
         } else {
             ost << m_expr.info();
@@ -162,9 +168,9 @@ public:
     }
  
 private:
-    ExprInfo    m_expr;
-    EvalInfo    m_eval;
-    HandlerInfo m_handler;
+    ExprInfo m_expr;
+    EvalInfo m_eval;
+    EvalInfo m_handler;
 };
 
 struct TestCount {
@@ -219,11 +225,17 @@ private:
 
 using TestCases = std::vector<std::shared_ptr<TestCase>>;
 
-inline bool handleRequire(bool b) {
-    if (!b) {
-        throw TestTermination{};
+inline bool handleRequire(ExprInfo const & expr) {
+    bool b_res = false;
+    try {
+        b_res = expr();
+    } catch (...) {
+        throw TestTermination{ detail::getExceptionInfo() };
     }
-    return true;
+    if (b_res) {
+        return true;
+    }
+    throw TestTermination{};
 }
 inline bool evalNoThrow(ExprInfo const & expr) {
     try {
