@@ -26,6 +26,7 @@
 #include <cassert>
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <functional>
@@ -51,6 +52,9 @@ namespace aytest_mini {
 namespace detail {
 constexpr char const * kStrEmpty = "";
 constexpr char const * kStrTab   = "  ";
+
+constexpr char const * kStrUnexpectedEx = "Thrown unexpected exception:";
+constexpr char const * kStrNoExThrown   = "No exception thrown.";
 }
 typedef struct test_exception {
     test_exception() = default; 
@@ -75,15 +79,18 @@ T const & exception_cast(auto const & ex) {
     return static_cast<T const &>(static_cast<TestException const &>(ex));
 }
 
+inline void rethrowException() {
+    auto p_e = std::current_exception();
+    if (p_e) {
+        std::rethrow_exception(p_e);
+    }
+}
 inline std::string getExceptionInfo() {
     try {
-        auto p_e = std::current_exception();
-        if (p_e) {
-            std::rethrow_exception(p_e);
-        }
-    } catch (test_exception const & e) {
-        return e.what();
+        rethrowException();
     } catch (std::exception const & e) {
+        return e.what();
+    } catch (test_exception const & e) {
         return e.what();
     } catch (...) {
         return "Unknown exception.";
@@ -137,36 +144,10 @@ public:
         return *this;
     }
 
-    bool run() const {
-        if (!m_expr) {
-            throw TestException{"No test expression."};
-        }
-        auto eval_helper = ExprInfo{[this]() {
-            return this->m_eval ? this->m_eval(this->m_expr) : this->m_expr();
-        }};
-        return m_handler ? m_handler(eval_helper) : eval_helper();
-    }
+    bool run() const;
 
-    std::ostream & outputToStream(std::ostream & ost) {
-        bool b_exist_handler = m_handler.info().size();
-        bool b_exist_eval    = m_eval.info().size();
-        if (b_exist_handler) {
-            ost << m_handler.info();
-            if (b_exist_eval) {
-                ost << '_';
-            }
-        }
-        if (b_exist_eval) {
-            ost << m_eval.info();
-        }
-        if (b_exist_handler || b_exist_eval) {
-            ost << "( " << m_expr.info() << " )";
-        } else {
-            ost << m_expr.info();
-        }
-        return ost;
-    }
- 
+    std::ostream & outputToStream(std::ostream &);
+
 private:
     ExprInfo m_expr;
     EvalInfo m_eval;
@@ -184,6 +165,15 @@ struct TestCount {
         failed_ += rhs.failed_;
         return *this;
     }
+
+    void countOne(bool b_fail) {
+        ++total_;
+        if (b_fail) {
+            ++failed_;
+        } else {
+            ++passed_;
+        }
+    }
 };
 
 class TestCase {
@@ -199,20 +189,14 @@ public:
 
     virtual void AYTTM_BUILTIN(run)() = 0;
 
+    void AYTTM_BUILTIN(invokeExpr)(TestExpr const &, std::source_location const &);
+
     std::ostream & AYTTM_BUILTIN(outputToStream)(std::ostream & ost) {
-        detail::outputToStream(ost, m_src_loc) << std::endl;
+        detail::outputToStream(ost, m_src_loc) << ":" << std::endl;
         ost << "TEST CASE: " << m_name << std::endl;
         return ost;
     }
 
-    void AYTTM_BUILTIN(logResult)(bool b_res) {
-        m_cnt.total_++;
-        if (b_res) {
-            m_cnt.passed_++;
-        } else {
-            m_cnt.failed_++;
-        }
-    }
     TestCount const & AYTTM_BUILTIN(getTestCount)() {
         return m_cnt;
     }
@@ -225,10 +209,60 @@ private:
 
 using TestCases = std::vector<std::shared_ptr<TestCase>>;
 
+class TestGroup {
+public:
+    void run();
+
+    void appendCase(std::shared_ptr<TestCase> p_tc) {
+        assert(p_tc);
+        m_cases.push_back(p_tc);
+    }
+private:
+    TestCases m_cases;
+};
+
+class TestContext {
+public:
+    //static void run();
+
+    static TestGroup & getGroup() {
+        static TestGroup s_group;
+        return s_group;
+    }
+
+    //static std::ostream & getOStream() {
+        
+    //}
+
+private:
+    std::ostream * m_p_ost = nullptr;
+};
+
+template <typename T>
+int initTestCase(char const * p_name, std::source_location const & src_loc) {
+    auto p_tcase = std::make_shared<T>();
+    p_tcase->AYTTM_BUILTIN(setName)(p_name);
+    p_tcase->AYTTM_BUILTIN(setSrcLoc)(src_loc);
+    TestContext::getGroup().appendCase(std::static_pointer_cast<TestCase>(p_tcase));
+    return 0;
+}
+
+namespace detail {
+template <typename ExTy>
+void throwWithExInfo(char const * desc) {
+    std::stringstream ss;
+    ss << desc << '\n'
+       << kStrTab << getExceptionInfo();
+    throw ExTy{ ss.str() };
+}
+}
+
 inline bool handleRequire(ExprInfo const & expr) {
     bool b_res = false;
     try {
         b_res = expr();
+    } catch (TestException const & e) {
+        throw detail::exception_cast<TestTermination>(e);
     } catch (...) {
         throw TestTermination{ detail::getExceptionInfo() };
     }
@@ -239,10 +273,11 @@ inline bool handleRequire(ExprInfo const & expr) {
 }
 inline bool evalNoThrow(ExprInfo const & expr) {
     try {
-        return expr();
+        expr();
     } catch (...) {
-        return false;
+        detail::throwWithExInfo<TestOutput>(detail::kStrUnexpectedEx);
     }
+    return true;
 }
 inline bool evalThrow(ExprInfo const & expr) {
     try {
@@ -250,7 +285,7 @@ inline bool evalThrow(ExprInfo const & expr) {
     } catch (...) {
         return true;
     }
-    return false;
+    throw TestOutput{ detail::kStrNoExThrown };
 }
 template <typename ExTy>
 bool evalThrowAs(ExprInfo const & expr) {
@@ -259,8 +294,61 @@ bool evalThrowAs(ExprInfo const & expr) {
     } catch (ExTy const &) {
         return true;
     } catch (...) {
-        return false;
+        detail::throwWithExInfo<TestOutput>(detail::kStrUnexpectedEx);
     }
-    return false;
+    throw TestOutput{ detail::kStrNoExThrown };
 }
+
+inline bool TestExpr::run() const {
+    if (!m_expr) {
+        throw TestException{"No test expression."};
+    }
+    auto eval_helper = [this]() {
+        return this->m_eval ? this->m_eval(this->m_expr) : this->m_expr();
+    };
+    return m_handler ? m_handler(ExprInfo{ eval_helper }) : eval_helper();
+}
+
+inline std::ostream & TestExpr::outputToStream(std::ostream & ost) {
+    bool b_exist_handler = m_handler.info().size();
+    bool b_exist_eval    = m_eval.info().size();
+    if (b_exist_handler) {
+        ost << m_handler.info();
+        if (b_exist_eval) {
+            ost << '_';
+        }
+    }
+    if (b_exist_eval) {
+        ost << m_eval.info();
+    }
+    if (b_exist_handler || b_exist_eval) {
+        ost << "( " << m_expr.info() << " )";
+    } else {
+        ost << m_expr.info();
+    }
+    return ost;
+}
+
+inline void TestCase::AYTTM_BUILTIN(invokeExpr)(
+    TestExpr const & expr, std::source_location const & expr_loc) {
+    try {
+        if (!expr.run()) {
+
+        }
+    } catch (TestTermination const & e) {
+    } catch (std::exception const & e) {
+    }
+}
+
+inline void TestGroup::run() {
+    for (auto & p_tcase : m_cases) {
+        try {
+            p_tcase->AYTTM_BUILTIN(run)();
+        } catch (TestTermination const &) {
+            continue;
+        }
+    }
+}
+
+
 }
