@@ -187,16 +187,16 @@ public:
     void AYTTM_BUILTIN(setSrcLoc)(std::source_location const & src_loc) {
         m_src_loc = src_loc;
     }
+    TestCount const & AYTTM_BUILTIN(getTestCount)() {
+        return m_cnt;
+    }
 
     virtual void AYTTM_BUILTIN(runImpl)() = 0;
 
     bool AYTTM_BUILTIN(run)();
     void AYTTM_BUILTIN(invokeExpr)(TestExpr const &, std::source_location const &);
-    std::ostream & AYTTM_BUILTIN(outputToStream)(std::ostream & ost); 
-
-    TestCount const & AYTTM_BUILTIN(getTestCount)() {
-        return m_cnt;
-    }
+    void AYTTM_BUILTIN(recordResult)(bool);
+    std::ostream & AYTTM_BUILTIN(outputToStream)(std::ostream &); 
 
 private:
     std::string_view     m_name;
@@ -372,7 +372,21 @@ inline bool TestCase::AYTTM_BUILTIN(run)() {
     if (!m_cnt.failed_) {
         return true;
     }
+    // end split line of test case
+    detail::outputToStreamRepeat<>(
+        TestContext::getConfig().getOStream(), detail::kStrDivider) << std::endl;
     return false;
+}
+
+inline void TestCase::AYTTM_BUILTIN(recordResult)(bool b_pass) {
+    if (!b_pass && !m_cnt.failed_) {
+        auto & ost = TestContext::getConfig().getOStream();
+        // begin split line of test case
+        detail::outputToStreamRepeat<>(ost, detail::kStrDivider) << std::endl;
+        AYTTM_BUILTIN(outputToStream)(ost) << std::endl;
+        detail::outputToStreamRepeat<>(ost, detail::kStrWavyDivider) << std::endl;
+    }
+    m_cnt.countOne(b_pass);
 }
 
 inline std::ostream & TestCase::AYTTM_BUILTIN(outputToStream)(std::ostream & ost) {
