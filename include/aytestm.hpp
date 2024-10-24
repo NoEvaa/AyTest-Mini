@@ -41,6 +41,7 @@
 
 #define AYTTM_SRC_LOC std::source_location::current()
 
+#define AYTTM_EXPRINFO(_mode, ...) AYTTM_CAT(AYTTM_EXPRINFO_, _mode)(__VA_ARGS__)
 #define AYTTM_EXPRINFO_BOOL(...)                                                                   \
     aytest_mini::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, #__VA_ARGS__)
 #define AYTTM_EXPRINFO_VOID(...)                                                                   \
@@ -146,8 +147,7 @@ public:
     }
 
     bool run() const;
-
-    std::ostream & outputToStream(std::ostream &) const;
+    friend std::ostream & operator<<(std::ostream &, TestExpr const &);
 
 private:
     ExprInfo m_expr;
@@ -196,7 +196,7 @@ public:
     bool AYTTM_BUILTIN(run)();
     void AYTTM_BUILTIN(invokeExpr)(TestExpr const &, std::source_location const &);
     void AYTTM_BUILTIN(recordResult)(bool);
-    std::ostream & AYTTM_BUILTIN(outputToStream)(std::ostream &); 
+    friend std::ostream & operator<<(std::ostream &, TestCase const &);
 
 private:
     std::string_view     m_name;
@@ -215,19 +215,13 @@ public:
     }
 private:
     TestCases m_cases;
-    TestCount m_cnt;
 };
 
-class TestConfig {
-public:
+struct TestConfig {
+    std::function<std::ostream &(void)> fn_get_ostream_;
     std::ostream & getOStream() const {
-        return m_p_ost ? *m_p_ost : std::cout;
+        return fn_get_ostream_ ? fn_get_ostream_() : std::cout;
     }
-    void bindOStream(std::ostream & ost) {
-        m_p_ost = &ost;
-    }
-private:
-    std::ostream * m_p_ost = nullptr;
 };
 
 class TestContext {
@@ -262,14 +256,13 @@ void throwWithExInfo(char const * desc) {
 }
 
 inline std::ostream & outputToStream(std::ostream & ost, std::source_location const & src_loc) {
-    ost << src_loc.file_name() << "(" << src_loc.line() << ")";
-    return ost;
+    return ost << src_loc.file_name() << "(" << src_loc.line() << ")";
 }
 
 inline std::ostream & outputFailedExprToStream(std::ostream & ost,
     TestExpr const & expr, std::source_location const & expr_loc) {
     outputToStream(ost, expr_loc) << ": FAILED:\n";
-    return expr.outputToStream(ost << kStrTab);
+    return ost << kStrTab << expr;
 }
 
 template <std::size_t N = 8>
@@ -325,7 +318,7 @@ bool evalThrowAs(ExprInfo const & expr) {
 
 inline bool TestExpr::run() const {
     if (!m_expr) {
-        throw TestException{"No test expression."};
+        throw TestException{"Empty test expression."};
     }
     auto eval_helper = [this]() {
         return this->m_eval ? this->m_eval(this->m_expr) : this->m_expr();
@@ -333,22 +326,22 @@ inline bool TestExpr::run() const {
     return m_handler ? m_handler(ExprInfo{ eval_helper }) : eval_helper();
 }
 
-inline std::ostream & TestExpr::outputToStream(std::ostream & ost) const {
-    bool b_exist_handler = !!m_handler.info().size();
-    bool b_exist_eval    = !!m_eval.info().size();
+inline std::ostream & operator<<(std::ostream & ost, TestExpr const & te) {
+    bool b_exist_handler = !!te.m_handler.info().size();
+    bool b_exist_eval    = !!te.m_eval.info().size();
     if (b_exist_handler) {
-        ost << m_handler.info();
+        ost << te.m_handler.info();
         if (b_exist_eval) {
             ost << '_';
         }
     }
     if (b_exist_eval) {
-        ost << m_eval.info();
+        ost << te.m_eval.info();
     }
     if (b_exist_handler || b_exist_eval) {
-        ost << "( " << m_expr.info() << " )";
+        ost << "( " << te.m_expr.info() << " )";
     } else {
-        ost << m_expr.info();
+        ost << te.m_expr.info();
     }
     return ost;
 }
@@ -383,25 +376,28 @@ inline void TestCase::AYTTM_BUILTIN(recordResult)(bool b_pass) {
         auto & ost = TestContext::getConfig().getOStream();
         // begin split line of test case
         detail::outputToStreamRepeat<>(ost, detail::kStrDivider) << std::endl;
-        AYTTM_BUILTIN(outputToStream)(ost) << std::endl;
+        ost << *this << std::endl;
         detail::outputToStreamRepeat<>(ost, detail::kStrWavyDivider) << std::endl;
     }
     m_cnt.countOne(b_pass);
 }
 
-inline std::ostream & TestCase::AYTTM_BUILTIN(outputToStream)(std::ostream & ost) {
-    detail::outputToStream(ost, m_src_loc) << ":" << std::endl;
-    ost << "TEST CASE: " << m_name << std::endl;
+inline std::ostream & operator<<(std::ostream & ost, TestCase const & tc) {
+    detail::outputToStream(ost, tc.m_src_loc) << ":" << std::endl;
+    ost << "TEST CASE: " << tc.m_name << std::endl;
     return ost;
 }
 
 inline void TestGroup::run() {
-    TestCount result;
+    TestCount case_res;
+    TestCount expr_res;
     for (auto & p_tcase : m_cases) {
-        p_tcase->AYTTM_BUILTIN(run)();
-        result += p_tcase->AYTTM_BUILTIN(getTestCount)();
+        bool b_res = p_tcase->AYTTM_BUILTIN(run)();
+        expr_res += p_tcase->AYTTM_BUILTIN(getTestCount)();
+        case_res.countOne(b_res);
     }
 }
 
 
 }
+

@@ -32,9 +32,13 @@ int main()
     auto AYTTM_BUILTIN(expr) = TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
             .bindEval(EvalInfo(nullptr, "THROW"))
             .bindHandler(EvalInfo(nullptr, "CHECK"));
-    AYTTM_BUILTIN(expr).outputToStream(std::cout) << std::endl;
+    std::cout << AYTTM_BUILTIN(expr) << std::endl;
 
-    std::cout << 0 << std::endl;
+    AYTTM_BUILTIN(TestCase1) tcase;
+    tcase.__A_Y_T_E_S_T_M__builtin__setName("case 1");
+    tcase.__A_Y_T_E_S_T_M__builtin__setSrcLoc(AYTTM_SRC_LOC);
+    std::cout << tcase << std::endl;
+
     return 0;
 }
 
