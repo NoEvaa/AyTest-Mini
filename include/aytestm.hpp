@@ -41,14 +41,42 @@
 
 #define AYTTM_SRC_LOC std::source_location::current()
 
+#define AYTTM_TEST_CASE(case_name, ...)                                                            \
+    AYTTM_TEST_CASE_IMPL(AYTTM_CAT(TestCase, __COUNTER__), case_name, __VA_ARGS__)
+#define AYTTM_TEST_CASE_IMPL(class_name, case_name, ...)                                           \
+    class AYTTM_BUILTIN(class_name) : public aytest_mini::TestCase {                               \
+    public:                                                                                        \
+        void AYTTM_BUILTIN(runImpl)() override;                                                    \
+    };                                                                                             \
+    namespace {                                                                                    \
+    static int AYTTM_BUILTIN(AYTTM_CAT(s_i_, class_name)) =                                        \
+        aytest_mini::initTestCase<AYTTM_BUILTIN(class_name)>(case_name, AYTTM_SRC_LOC);            \
+    }                                                                                              \
+    void AYTTM_BUILTIN(case_name)::AYTTM_BUILTIN(runImpl)()
+
+#define AYTTM_CHECK(expr, ...)                                                                     \
+    AYTTM_EXPR_IMPL(BOOL, expr, nullptr, "CHECK", nullptr, "", __VA_ARGS__)
+#define AYTTM_REQUIRE(expr, ...)                                                                   \
+    AYTTM_EXPR_IMPL(BOOL, expr,                                                                    \
+        aytest_mini::detail::handleRequire, "REQUIRE", nullptr, "", __VA_ARGS__)
+#define AYTTM_CHECK_THROW(expr, ...)                                                               \
+    AYTTM_EXPR_IMPL(BOOL, expr,                                                                    \
+        nullptr, "CHECK", aytest_mini::detail::evalThrow, "NOTHROW", __VA_ARGS__)
+#define AYTTM_CHECK_NOTHROW(expr, ...)                                                             \
+    AYTTM_EXPR_IMPL(BOOL, expr,                                                                    \
+        nullptr, "CHECK", aytest_mini::detail::evalThrow, "NOTHROW", __VA_ARGS__)
+#define AYTTM_EXPR_IMPL(expr_mode, expr, handler, handler_msg, eval, eval_msg, ...)                \
+    this->AYTTM_BUILTIN(invokeExpr)(                                                               \
+        aytest_mini::TestExpr(AYTTM_EXPRINFO(expr_mode, expr))                                     \
+            .bindEval(aytest_mini::EvalInfo(eval))                                                 \
+            .bindHandler(aytest_mini::EvalInfo(handler, )),                                        \
+        AYTTM_SRC_LOC                                                                              \
+    );
 #define AYTTM_EXPRINFO(_mode, ...) AYTTM_CAT(AYTTM_EXPRINFO_, _mode)(__VA_ARGS__)
 #define AYTTM_EXPRINFO_BOOL(...)                                                                   \
     aytest_mini::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, #__VA_ARGS__)
 #define AYTTM_EXPRINFO_VOID(...)                                                                   \
     aytest_mini::ExprInfo([&]() { static_cast<void>(__VA_ARGS__); return true; }, #__VA_ARGS__)
-
-
-
 
 namespace aytest_mini {
 namespace detail {
@@ -166,7 +194,6 @@ struct TestCount {
         failed_ += rhs.failed_;
         return *this;
     }
-
     void countOne(bool b_pass) {
         ++total_;
         if (b_pass) {
@@ -176,6 +203,16 @@ struct TestCount {
         }
     }
 };
+inline std::ostream & operator<<(std::ostream & ost, TestCount const & cnt) {
+    ost << ' ' << cnt.total_;
+    if (cnt.passed_) {
+        ost << " | " << cnt.passed_ << " passed";
+    }
+    if (cnt.failed_) {
+        ost << " | " << cnt.failed_ << " failed";
+    }
+    return ost;
+}
 
 class TestCase {
 public:
@@ -195,8 +232,11 @@ public:
 
     bool AYTTM_BUILTIN(run)();
     void AYTTM_BUILTIN(invokeExpr)(TestExpr const &, std::source_location const &);
-    void AYTTM_BUILTIN(recordResult)(bool);
     friend std::ostream & operator<<(std::ostream &, TestCase const &);
+
+private:
+    void recordResult(bool);
+    void outputFailedMsg(TestExpr const &, std::source_location const &, std::string const &);
 
 private:
     std::string_view     m_name;
@@ -247,24 +287,21 @@ int initTestCase(char const * p_name, std::source_location const & src_loc) {
 }
 
 namespace detail {
-template <typename ExTy>
-void throwWithExInfo(char const * desc) {
+inline std::string getExMsg(char const * desc) {
     std::stringstream ss;
     ss << desc << '\n'
        << kStrTab << getExceptionInfo();
-    throw ExTy{ ss.str() };
+    return ss.str();
 }
 
 inline std::ostream & outputToStream(std::ostream & ost, std::source_location const & src_loc) {
     return ost << src_loc.file_name() << "(" << src_loc.line() << ")";
 }
-
 inline std::ostream & outputFailedExprToStream(std::ostream & ost,
     TestExpr const & expr, std::source_location const & expr_loc) {
     outputToStream(ost, expr_loc) << ": FAILED:\n";
     return ost << kStrTab << expr;
 }
-
 template <std::size_t N = 8>
 std::ostream & outputToStreamRepeat(std::ostream & ost, char const * s) {
     for (std::size_t i = 0; i < N; ++i) {
@@ -281,7 +318,7 @@ inline bool handleRequire(ExprInfo const & expr) {
     } catch (TestException const & e) {
         throw detail::exception_cast<TestTermination>(e);
     } catch (...) {
-        detail::throwWithExInfo<TestTermination>(detail::kStrUnexpectedEx);
+        throw TestTermination{ detail::getExMsg(detail::kStrUnexpectedEx) };
     }
     if (b_res) {
         return true;
@@ -292,7 +329,7 @@ inline bool evalNoThrow(ExprInfo const & expr) {
     try {
         expr();
     } catch (...) {
-        detail::throwWithExInfo<TestOutput>(detail::kStrUnexpectedEx);
+        throw TestOutput{ detail::getExMsg(detail::kStrUnexpectedEx) };
     }
     return true;
 }
@@ -311,7 +348,7 @@ bool evalThrowAs(ExprInfo const & expr) {
     } catch (ExTy const &) {
         return true;
     } catch (...) {
-        detail::throwWithExInfo<TestOutput>(detail::kStrUnexpectedEx);
+        throw TestOutput{ detail::getExMsg(detail::kStrUnexpectedEx) };
     }
     throw TestOutput{ detail::kStrNoExThrown };
 }
@@ -349,13 +386,20 @@ inline std::ostream & operator<<(std::ostream & ost, TestExpr const & te) {
 inline void TestCase::AYTTM_BUILTIN(invokeExpr)(
     TestExpr const & expr, std::source_location const & expr_loc) {
     try {
-        if (!expr.run()) {
-
+        if (expr.run()) {
+            recordResult(true);
+        } else {
+            recordResult(false);
+            outputFailedMsg(expr, expr_loc, "");
         }
     } catch (TestTermination const & e) {
+        outputFailedMsg(expr, expr_loc, detail::getExceptionInfo());
         throw TestTermination{};
     } catch (TestException const & e) {
-    } catch (...) {}
+        outputFailedMsg(expr, expr_loc, detail::getExceptionInfo());
+    } catch (...) {
+        outputFailedMsg(expr, expr_loc, detail::getExMsg(detail::kStrUnexpectedEx));
+    }
 }
 
 inline bool TestCase::AYTTM_BUILTIN(run)() {
@@ -371,7 +415,7 @@ inline bool TestCase::AYTTM_BUILTIN(run)() {
     return false;
 }
 
-inline void TestCase::AYTTM_BUILTIN(recordResult)(bool b_pass) {
+inline void TestCase::recordResult(bool b_pass) {
     if (!b_pass && !m_cnt.failed_) {
         auto & ost = TestContext::getConfig().getOStream();
         // begin split line of test case
@@ -380,6 +424,15 @@ inline void TestCase::AYTTM_BUILTIN(recordResult)(bool b_pass) {
         detail::outputToStreamRepeat<>(ost, detail::kStrWavyDivider) << std::endl;
     }
     m_cnt.countOne(b_pass);
+}
+
+inline void TestCase::outputFailedMsg(TestExpr const & expr,
+    std::source_location const & expr_loc, std::string const & msg) {
+    auto & ost = TestContext::getConfig().getOStream();
+    detail::outputFailedExprToStream(ost, expr, expr_loc) << std::endl;
+    if (!msg.empty()) {
+        ost << msg << std::endl;
+    }
 }
 
 inline std::ostream & operator<<(std::ostream & ost, TestCase const & tc) {
@@ -396,8 +449,10 @@ inline void TestGroup::run() {
         expr_res += p_tcase->AYTTM_BUILTIN(getTestCount)();
         case_res.countOne(b_res);
     }
+    auto & ost = TestContext::getConfig().getOStream();
+    detail::outputToStreamRepeat<>(ost, detail::kStrDoubleDivider) << std::endl;
+    ost << "test cases:" << case_res << std::endl;
+    ost << "assertions:" << expr_res << std::endl;
 }
-
-
 }
 
