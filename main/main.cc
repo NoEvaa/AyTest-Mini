@@ -18,8 +18,8 @@ static int AYTTM_BUILTIN(s_i_TestCase1) =
 void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(runImpl)() {
     this->AYTTM_BUILTIN(invokeExpr)(
         aytest_mini::TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
-            .bindEval(aytest_mini::EvalInfo{nullptr})
-            .bindHandler(aytest_mini::EvalInfo{nullptr}),
+            .bindEval(aytest_mini::EvalInfo(nullptr))
+            .bindHandler(aytest_mini::EvalInfo(nullptr)),
         AYTTM_SRC_LOC
     );
 }
@@ -30,8 +30,8 @@ int main()
 {
     using namespace aytest_mini;
     auto AYTTM_BUILTIN(expr) = TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
-            .bindEval(EvalInfo{nullptr, "THROW"})
-            .bindHandler(EvalInfo{nullptr, "CHECK"});
+            .bindEval(EvalInfo(nullptr, "THROW"))
+            .bindHandler(EvalInfo(nullptr, "CHECK"));
     AYTTM_BUILTIN(expr).outputToStream(std::cout) << std::endl;
 
     std::cout << 0 << std::endl;

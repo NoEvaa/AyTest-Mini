@@ -37,7 +37,7 @@
 #define AYTTM_CAT1(a, b) AYTTM_CAT(a, b)
 #define AYTTM_CAT2(a, b) AYTTM_CAT1(a, b)
 
-#define AYTTM_BUILTIN(_n) AYTTM_CAT(__aytestm__builtin__, _n)
+#define AYTTM_BUILTIN(_n) AYTTM_CAT(__A_Y_T_E_S_T_M__builtin__, _n)
 
 #define AYTTM_SRC_LOC std::source_location::current()
 
@@ -167,12 +167,12 @@ struct TestCount {
         return *this;
     }
 
-    void countOne(bool b_fail) {
+    void countOne(bool b_pass) {
         ++total_;
-        if (b_fail) {
-            ++failed_;
-        } else {
+        if (b_pass) {
             ++passed_;
+        } else {
+            ++failed_;
         }
     }
 };
@@ -223,7 +223,7 @@ public:
     std::ostream & getOStream() const {
         return m_p_ost ? *m_p_ost : std::cout;
     }
-    void setOStream(std::ostream & ost) {
+    void bindOStream(std::ostream & ost) {
         m_p_ost = &ost;
     }
 private:
@@ -266,16 +266,16 @@ inline std::ostream & outputToStream(std::ostream & ost, std::source_location co
     return ost;
 }
 
-inline std::ostream & outputToStream(std::ostream & ost,
+inline std::ostream & outputFailedExprToStream(std::ostream & ost,
     TestExpr const & expr, std::source_location const & expr_loc) {
-    outputToStream(ost, expr_loc) << ":\n";
+    outputToStream(ost, expr_loc) << ": FAILED:\n";
     return expr.outputToStream(ost << kStrTab);
 }
 
-template <std::size_t N = 10>
-std::ostream & outputDividerToStream(std::ostream & ost, char const * divider) {
+template <std::size_t N = 8>
+std::ostream & outputToStreamRepeat(std::ostream & ost, char const * s) {
     for (std::size_t i = 0; i < N; ++i) {
-        ost << divider;
+        ost << s;
     }
     return ost;
 }
@@ -334,8 +334,8 @@ inline bool TestExpr::run() const {
 }
 
 inline std::ostream & TestExpr::outputToStream(std::ostream & ost) const {
-    bool b_exist_handler = m_handler.info().size();
-    bool b_exist_eval    = m_eval.info().size();
+    bool b_exist_handler = !!m_handler.info().size();
+    bool b_exist_eval    = !!m_eval.info().size();
     if (b_exist_handler) {
         ost << m_handler.info();
         if (b_exist_eval) {
@@ -369,7 +369,10 @@ inline bool TestCase::AYTTM_BUILTIN(run)() {
     try {
         AYTTM_BUILTIN(runImpl)();
     } catch (TestTermination const &) {}
-    return true;
+    if (!m_cnt.failed_) {
+        return true;
+    }
+    return false;
 }
 
 inline std::ostream & TestCase::AYTTM_BUILTIN(outputToStream)(std::ostream & ost) {
