@@ -1,24 +1,64 @@
 #include <aytestm.hpp>
-#include <iostream>
+#include <stdexcept>
 
-
-// 4567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-
-
-
-TEST_CASE("case 1") {
-
+TEST_CASE("check true") {
+    CHECK(true);
+}
+TEST_CASE("check false") {
+    CHECK(false);
+}
+TEST_CASE("check") {
+    CHECK(0 < 1);
+    CHECK(0 > 1);
+}
+TEST_CASE("require true") {
+    REQUIRE(true);
+}
+TEST_CASE("require false") {
+    REQUIRE(false);
+}
+TEST_CASE("require") {
+    REQUIRE(0 < 1);
+    REQUIRE(0 > 1);
+    CHECK(false);
+}
+namespace {
+inline void throwTest() {
+    throw std::runtime_error{"throw test"};
+}
+inline void nothrowTest() {}
+}
+TEST_CASE("check throw") {
+    CHECK_THROW(throwTest());
+    CHECK_THROW(nothrowTest());
+}
+TEST_CASE("require throw") {
+    REQUIRE_THROW(throwTest());
+    REQUIRE_THROW(nothrowTest());
+    CHECK(false);
+}
+TEST_CASE("check nothrow") {
+    CHECK_NOTHROW(nothrowTest());
+    CHECK_NOTHROW(throwTest());
+}
+TEST_CASE("require nothrow") {
+    REQUIRE_NOTHROW(nothrowTest());
+    REQUIRE_NOTHROW(throwTest());
+    CHECK(false);
+}
+TEST_CASE("check throw as") {
+    CHECK_THROW_AS(std::string, throwTest());
+    CHECK_THROW_AS(std::runtime_error, throwTest());
+}
+TEST_CASE("require throw as") {
+    REQUIRE_THROW_AS(std::runtime_error, throwTest());
+    REQUIRE_THROW_AS(std::string, throwTest());
+    CHECK(false);
 }
 
 int main()
 {
-    using namespace aytest_mini;
-    auto AYTTM_BUILTIN(expr) = TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
-            .bindEval(EvalInfo(nullptr, "THROW"))
-            .bindHandler(EvalInfo(nullptr, "CHECK"));
-    std::cout << AYTTM_BUILTIN(expr) << std::endl;
-
-    TestContext::run();
+    aytest_mini::TestContext::run();
     return 0;
 }
 
