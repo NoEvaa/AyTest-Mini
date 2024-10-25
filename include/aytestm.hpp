@@ -32,6 +32,7 @@
 #include <functional>
 #include <source_location>
 #include <iostream>
+#include <iomanip>
 
 #define TEST_CASE(...) AYTTM_TEST_CASE(__VA_ARGS__)
 
@@ -61,13 +62,13 @@
     AYTTM_EXPR_IMPL(BOOL, expr, nullptr, "CHECK", nullptr, "", __VA_ARGS__)
 #define AYTTM_REQUIRE(expr, ...)                                                                   \
     AYTTM_EXPR_IMPL(BOOL, expr,                                                                    \
-        aytest_mini::detail::handleRequire, "REQUIRE", nullptr, "", __VA_ARGS__)
+        aytest_mini::handleRequire, "REQUIRE", nullptr, "", __VA_ARGS__)
 #define AYTTM_CHECK_THROW(expr, ...)                                                               \
     AYTTM_EXPR_IMPL(BOOL, expr,                                                                    \
-        nullptr, "CHECK", aytest_mini::detail::evalThrow, "NOTHROW", __VA_ARGS__)
+        nullptr, "CHECK", aytest_mini::evalThrow, "NOTHROW", __VA_ARGS__)
 #define AYTTM_CHECK_NOTHROW(expr, ...)                                                             \
     AYTTM_EXPR_IMPL(BOOL, expr,                                                                    \
-        nullptr, "CHECK", aytest_mini::detail::evalThrow, "NOTHROW", __VA_ARGS__)
+        nullptr, "CHECK", aytest_mini::evalThrow, "NOTHROW", __VA_ARGS__)
 #define AYTTM_EXPR_IMPL(expr_mode, expr, handler, handler_msg, eval, eval_msg, ...)                \
     this->AYTTM_BUILTIN(invokeExpr)(                                                               \
         aytest_mini::TestExpr(AYTTM_EXPRINFO(expr_mode, expr))                                     \
@@ -84,7 +85,7 @@
 namespace aytest_mini {
 namespace detail {
 constexpr char const * kStrEmpty = "";
-constexpr char const * kStrTab   = "  ";
+constexpr char const * kStrTab   = "    ";
 
 constexpr char const * kStrUnexpectedEx = "Thrown unexpected exception:";
 constexpr char const * kStrNoExThrown   = "No exception thrown.";
@@ -207,12 +208,12 @@ struct TestCount {
     }
 };
 inline std::ostream & operator<<(std::ostream & ost, TestCount const & cnt) {
-    ost << ' ' << cnt.total_;
+    ost << std::setw(5) << cnt.total_;
     if (cnt.passed_) {
-        ost << " | " << cnt.passed_ << " passed";
+        ost << " | " << std::setw(5) << cnt.passed_ << " passed";
     }
     if (cnt.failed_) {
-        ost << " | " << cnt.failed_ << " failed";
+        ost << " | " << std::setw(5) << cnt.failed_ << " failed";
     }
     return ost;
 }
@@ -396,11 +397,14 @@ inline void TestCase::AYTTM_BUILTIN(invokeExpr)(
             outputFailedMsg(expr, expr_loc, "");
         }
     } catch (TestTermination const & e) {
-        outputFailedMsg(expr, expr_loc, detail::getExceptionInfo());
+        recordResult(false);
+        outputFailedMsg(expr, expr_loc, e.what());
         throw TestTermination{};
-    } catch (TestException const & e) {
-        outputFailedMsg(expr, expr_loc, detail::getExceptionInfo());
+    } catch (TestOutput const & e) {
+        recordResult(false);
+        outputFailedMsg(expr, expr_loc, e.what());
     } catch (...) {
+        recordResult(false);
         outputFailedMsg(expr, expr_loc, detail::getExMsg(detail::kStrUnexpectedEx));
     }
 }
@@ -415,8 +419,8 @@ inline bool TestCase::AYTTM_BUILTIN(run)() {
 inline void TestCase::recordResult(bool b_pass) {
     if (!b_pass && !m_cnt.failed_) {
         auto & ost = TestContext::getConfig().getOStream();
-        detail::outputToStreamRepeat<>(ost, detail::kStrDivider) << std::endl;
-        ost << *this << std::endl;
+        detail::outputToStreamRepeat<>(ost, detail::kStrDivider) << '\n';
+        ost << *this << "\n\n";
         detail::outputToStreamRepeat<>(ost, detail::kStrWavyDivider) << std::endl;
     }
     m_cnt.countOne(b_pass);
@@ -432,7 +436,7 @@ inline void TestCase::outputFailedMsg(TestExpr const & expr,
 }
 
 inline std::ostream & operator<<(std::ostream & ost, TestCase const & tc) {
-    detail::outputToStream(ost, tc.m_src_loc) << ":" << std::endl;
+    detail::outputToStream(ost, tc.m_src_loc) << ":\n";
     ost << "TEST CASE: " << tc.m_name << std::endl;
     return ost;
 }
@@ -446,9 +450,9 @@ inline void TestGroup::run() {
         case_res.countOne(b_res);
     }
     auto & ost = TestContext::getConfig().getOStream();
-    detail::outputToStreamRepeat<>(ost, detail::kStrDoubleDivider) << std::endl;
-    ost << "test cases:" << case_res << std::endl;
-    ost << "assertions:" << expr_res << std::endl;
+    detail::outputToStreamRepeat<>(ost, detail::kStrDoubleDivider) << '\n';
+    ost << "test cases: " << case_res << '\n';
+    ost << "assertions: " << expr_res << std::endl;
 }
 }
 
