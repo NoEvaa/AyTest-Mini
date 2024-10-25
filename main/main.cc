@@ -5,23 +5,6 @@
 // 4567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 
 
-class AYTTM_BUILTIN(TestCase1x) : public aytest_mini::TestCase {
-public:
-    void AYTTM_BUILTIN(runImpl)() override;
-};
-namespace {
-static int AYTTM_BUILTIN(s_i_TestCase1x) =
-    aytest_mini::initTestCase<AYTTM_BUILTIN(TestCase1x)>("case 1", AYTTM_SRC_LOC);
-}
-void AYTTM_BUILTIN(TestCase1x)::AYTTM_BUILTIN(runImpl)() {
-    this->AYTTM_BUILTIN(invokeExpr)(
-        aytest_mini::TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
-            .bindEval(aytest_mini::EvalInfo(nullptr))
-            .bindHandler(aytest_mini::EvalInfo(nullptr)),
-        AYTTM_SRC_LOC
-    );
-}
-
 
 TEST_CASE("case 1") {
 
@@ -35,11 +18,7 @@ int main()
             .bindHandler(EvalInfo(nullptr, "CHECK"));
     std::cout << AYTTM_BUILTIN(expr) << std::endl;
 
-    AYTTM_BUILTIN(TestCase1) tcase;
-    tcase.__A_Y_T_E_S_T_M__builtin__setName("case 1");
-    tcase.__A_Y_T_E_S_T_M__builtin__setSrcLoc(AYTTM_SRC_LOC);
-    std::cout << tcase << std::endl;
-
+    TestContext::run();
     return 0;
 }
 

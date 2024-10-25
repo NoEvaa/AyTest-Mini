@@ -35,6 +35,7 @@
 #include <iomanip>
 
 #define TEST_CASE(...) AYTTM_TEST_CASE(__VA_ARGS__)
+#define CHECK(...) AYTTM_EXPR_1(BOOL, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), CHECK,)
 
 #define AYTTM_STR(...)   #__VA_ARGS__
 #define AYTTM_CAT(a, b)  a##b
@@ -57,30 +58,29 @@
         aytest_mini::initTestCase<AYTTM_BUILTIN(class_name)>(case_name, AYTTM_SRC_LOC);            \
     }                                                                                              \
     void AYTTM_BUILTIN(class_name)::AYTTM_BUILTIN(runImpl)()
-
-#define AYTTM_CHECK(expr, ...)                                                                     \
-    AYTTM_EXPR_IMPL(BOOL, expr, nullptr, "CHECK", nullptr, "", __VA_ARGS__)
-#define AYTTM_REQUIRE(expr, ...)                                                                   \
-    AYTTM_EXPR_IMPL(BOOL, expr,                                                                    \
-        aytest_mini::handleRequire, "REQUIRE", nullptr, "", __VA_ARGS__)
-#define AYTTM_CHECK_THROW(expr, ...)                                                               \
-    AYTTM_EXPR_IMPL(BOOL, expr,                                                                    \
-        nullptr, "CHECK", aytest_mini::evalThrow, "NOTHROW", __VA_ARGS__)
-#define AYTTM_CHECK_NOTHROW(expr, ...)                                                             \
-    AYTTM_EXPR_IMPL(BOOL, expr,                                                                    \
-        nullptr, "CHECK", aytest_mini::evalThrow, "NOTHROW", __VA_ARGS__)
-#define AYTTM_EXPR_IMPL(expr_mode, expr, handler, handler_msg, eval, eval_msg, ...)                \
+#define AYTTM_EXPR_1(expr_mode, expr, expr_msg, eval, eval_args)                                   \
+    AYTTM_EXPR_IMPL(expr_mode, expr, expr_msg, AYTTM_EVAL(eval, eval_args), AYTTM_EVAL_NONE)
+#define AYTTM_EXPR_2(expr_mode, expr, expr_msg, handler, eval, eval_args)                          \
+    AYTTM_EXPR_IMPL(expr_mode, expr, expr_msg, AYTTM_EVAL(eval, eval_args), AYTTM_EVAL(handler))
+#define AYTTM_EXPR_IMPL(expr_mode, expr, expr_msg, eval, handler, ...)                             \
     this->AYTTM_BUILTIN(invokeExpr)(                                                               \
-        aytest_mini::TestExpr(AYTTM_EXPRINFO(expr_mode, expr))                                     \
+        aytest_mini::TestExpr(AYTTM_EXPRINFO(expr_mode, expr_msg, expr))                           \
             .bindEval(aytest_mini::EvalInfo(eval))                                                 \
-            .bindHandler(aytest_mini::EvalInfo(handler, )),                                        \
+            .bindHandler(aytest_mini::EvalInfo(handler)),                                          \
         AYTTM_SRC_LOC                                                                              \
     );
 #define AYTTM_EXPRINFO(_mode, ...) AYTTM_CAT(AYTTM_EXPRINFO_, _mode)(__VA_ARGS__)
-#define AYTTM_EXPRINFO_BOOL(...)                                                                   \
-    aytest_mini::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, #__VA_ARGS__)
-#define AYTTM_EXPRINFO_VOID(...)                                                                   \
-    aytest_mini::ExprInfo([&]() { static_cast<void>(__VA_ARGS__); return true; }, #__VA_ARGS__)
+#define AYTTM_EXPRINFO_BOOL(msg, ...)                                                              \
+    aytest_mini::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, msg)
+#define AYTTM_EXPRINFO_VOID(msg, ...)                                                              \
+    aytest_mini::ExprInfo([&]() { static_cast<void>(__VA_ARGS__); return true; }, msg)
+#define AYTTM_EVAL_NONE          nullptr, ""
+#define AYTTM_EVAL(_mode, ...)   AYTTM_CAT(AYTTM_EVAL_, _mode)(__VA_ARGS__), AYTTM_STR(_mode)
+#define AYTTM_EVAL_CHECK(...)    nullptr
+#define AYTTM_EVAL_REQUIRE(...)  aytest_mini::handleRequire
+#define AYTTM_EVAL_THROW(...)    aytest_mini::evalThrow
+#define AYTTM_EVAL_NOTHROW(...)  aytest_mini::evalNoThrow
+#define AYTTM_EVAL_THROW_AS(...) aytest_mini::evalThrowAs<__VA_ARGS__>
 
 namespace aytest_mini {
 namespace detail {
@@ -270,7 +270,9 @@ struct TestConfig {
 
 class TestContext {
 public:
-    static void run() {}
+    static void run() {
+        getGroup().run();
+    }
     static TestConfig & getConfig() {
         static TestConfig s_config;
         return s_config;
