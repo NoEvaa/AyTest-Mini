@@ -5,15 +5,15 @@
 // 4567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 
 
-class AYTTM_BUILTIN(TestCase1) : public aytest_mini::TestCase {
+class AYTTM_BUILTIN(TestCase1x) : public aytest_mini::TestCase {
 public:
     void AYTTM_BUILTIN(runImpl)() override;
 };
 namespace {
-static int AYTTM_BUILTIN(s_i_TestCase1) =
-    aytest_mini::initTestCase<AYTTM_BUILTIN(TestCase1)>("case 1", AYTTM_SRC_LOC);
+static int AYTTM_BUILTIN(s_i_TestCase1x) =
+    aytest_mini::initTestCase<AYTTM_BUILTIN(TestCase1x)>("case 1", AYTTM_SRC_LOC);
 }
-void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(runImpl)() {
+void AYTTM_BUILTIN(TestCase1x)::AYTTM_BUILTIN(runImpl)() {
     this->AYTTM_BUILTIN(invokeExpr)(
         aytest_mini::TestExpr(AYTTM_EXPRINFO_BOOL(1 < 2))
             .bindEval(aytest_mini::EvalInfo(nullptr))
@@ -23,6 +23,9 @@ void AYTTM_BUILTIN(TestCase1)::AYTTM_BUILTIN(runImpl)() {
 }
 
 
+TEST_CASE("case 1") {
+
+}
 
 int main()
 {

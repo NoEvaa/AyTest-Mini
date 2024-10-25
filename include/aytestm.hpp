@@ -33,6 +33,9 @@
 #include <source_location>
 #include <iostream>
 
+#define TEST_CASE(...) AYTTM_TEST_CASE(__VA_ARGS__)
+
+#define AYTTM_STR(...)   #__VA_ARGS__
 #define AYTTM_CAT(a, b)  a##b
 #define AYTTM_CAT1(a, b) AYTTM_CAT(a, b)
 #define AYTTM_CAT2(a, b) AYTTM_CAT1(a, b)
@@ -42,7 +45,7 @@
 #define AYTTM_SRC_LOC std::source_location::current()
 
 #define AYTTM_TEST_CASE(case_name, ...)                                                            \
-    AYTTM_TEST_CASE_IMPL(AYTTM_CAT(TestCase, __COUNTER__), case_name, __VA_ARGS__)
+    AYTTM_TEST_CASE_IMPL(AYTTM_CAT1(TestCase, __COUNTER__), case_name, __VA_ARGS__)
 #define AYTTM_TEST_CASE_IMPL(class_name, case_name, ...)                                           \
     class AYTTM_BUILTIN(class_name) : public aytest_mini::TestCase {                               \
     public:                                                                                        \
@@ -52,7 +55,7 @@
     static int AYTTM_BUILTIN(AYTTM_CAT(s_i_, class_name)) =                                        \
         aytest_mini::initTestCase<AYTTM_BUILTIN(class_name)>(case_name, AYTTM_SRC_LOC);            \
     }                                                                                              \
-    void AYTTM_BUILTIN(case_name)::AYTTM_BUILTIN(runImpl)()
+    void AYTTM_BUILTIN(class_name)::AYTTM_BUILTIN(runImpl)()
 
 #define AYTTM_CHECK(expr, ...)                                                                     \
     AYTTM_EXPR_IMPL(BOOL, expr, nullptr, "CHECK", nullptr, "", __VA_ARGS__)
@@ -360,7 +363,7 @@ inline bool TestExpr::run() const {
     auto eval_helper = [this]() {
         return this->m_eval ? this->m_eval(this->m_expr) : this->m_expr();
     };
-    return m_handler ? m_handler(ExprInfo{ eval_helper }) : eval_helper();
+    return m_handler ? m_handler(ExprInfo(eval_helper)) : eval_helper();
 }
 
 inline std::ostream & operator<<(std::ostream & ost, TestExpr const & te) {
@@ -406,19 +409,12 @@ inline bool TestCase::AYTTM_BUILTIN(run)() {
     try {
         AYTTM_BUILTIN(runImpl)();
     } catch (TestTermination const &) {}
-    if (!m_cnt.failed_) {
-        return true;
-    }
-    // end split line of test case
-    detail::outputToStreamRepeat<>(
-        TestContext::getConfig().getOStream(), detail::kStrDivider) << std::endl;
-    return false;
+    return !m_cnt.failed_;
 }
 
 inline void TestCase::recordResult(bool b_pass) {
     if (!b_pass && !m_cnt.failed_) {
         auto & ost = TestContext::getConfig().getOStream();
-        // begin split line of test case
         detail::outputToStreamRepeat<>(ost, detail::kStrDivider) << std::endl;
         ost << *this << std::endl;
         detail::outputToStreamRepeat<>(ost, detail::kStrWavyDivider) << std::endl;
