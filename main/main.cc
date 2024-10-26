@@ -55,18 +55,27 @@ TEST_CASE("require throw as") {
     REQUIRE_THROW_AS(std::string, throwTest());
     CHECK(false);
 }
+TEST_CASE("section") {
+    CHECK(0 != 0);
+    SECTION("sec1") {
+        CHECK(false);
+    }
+    SECTION("sec2") {
+        REQUIRE(false);
+        CHECK(false);
+    }
+    SECTION("sec3") {
+        CHECK(false);
+        SECTION("sec3-1") {
+            CHECK(false);
+        }
+    }
+    CHECK(1 != 1);
+}
 
 int main()
 {
-    aytest_mini::detail::Locksmith ls;
-    int mn = 3;
-    do {
-        for (int i = 0;i<mn;++i){
-            std::cout << ls.unlocking() << std::endl;
-        }
-        std::cout << std::endl;
-    } while (ls.nextKey());
-    //aytest_mini::TestContext::run();
+    aytest_mini::TestContext::run();
     return 0;
 }
 

@@ -25,6 +25,12 @@
 /**
  * aytestm.hpp - the lightest modern C++ single-header testing framework
  * The library's page: https://github.com/NoEvaa/AyTest-Mini
+ *
+ * Macro configure
+ * - AYTESTM_DISABLE_MACRO
+ *     Test macro will be disabled.
+ * - AYTESTM_DISABLE_ANSI_COLOR
+ *     Output without ansi color code.
  */
 
 #include <cassert>
@@ -61,20 +67,20 @@
 #define AYTTM_TEST_CASE(case_name, ...)                                                            \
     AYTTM_TEST_CASE_IMPL(AYTTM_CAT1(TestCase, __COUNTER__), case_name, __VA_ARGS__)
 #define AYTTM_SECTION(...) AYTTM_SECTION_IMPL(__VA_ARGS__)
-#define AYTTM_CHECK(...)   AYTTM_EXPR_1(BOOL, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), CHECK,)
-#define AYTTM_REQUIRE(...) AYTTM_EXPR_1(BOOL, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), REQUIRE,)
+#define AYTTM_CHECK(...)   AYTTM_EXPR_1(BOOL, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK,)
+#define AYTTM_REQUIRE(...) AYTTM_EXPR_1(BOOL, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE,)
 #define AYTTM_CHECK_THROW(...)                                                                     \
-    AYTTM_EXPR_2(VOID, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), CHECK, THROW,)
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK, THROW,)
 #define AYTTM_REQUIRE_THROW(...)                                                                   \
-    AYTTM_EXPR_2(VOID, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), REQUIRE, THROW,)
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE, THROW,)
 #define AYTTM_CHECK_NOTHROW(...)                                                                   \
-    AYTTM_EXPR_2(VOID, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), CHECK, NOTHROW,)
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK, NOTHROW,)
 #define AYTTM_REQUIRE_NOTHROW(...)                                                                 \
-    AYTTM_EXPR_2(VOID, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), REQUIRE, NOTHROW,)
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE, NOTHROW,)
 #define AYTTM_CHECK_THROW_AS(_ex, ...)                                                             \
-    AYTTM_EXPR_2(VOID, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), CHECK, THROW_AS, _ex)
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK, THROW_AS, _ex)
 #define AYTTM_REQUIRE_THROW_AS(_ex, ...)                                                           \
-    AYTTM_EXPR_2(VOID, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), REQUIRE, THROW_AS, _ex)
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE, THROW_AS, _ex)
 
 #define AYTTM_BUILTIN(_n) AYTTM_CAT(__A_Y_T_E_S_T_M__builtin__, _n)
 #define AYTTM_SRC_LOC     std::source_location::current()
@@ -88,7 +94,8 @@
         aytest_mini::initTestCase<AYTTM_BUILTIN(class_name)>(case_name, AYTTM_SRC_LOC);            \
     }                                                                                              \
     void AYTTM_BUILTIN(class_name)::AYTTM_BUILTIN(runImpl)()
-#define AYTTM_SECTION_IMPL(...)
+#define AYTTM_SECTION_IMPL(...)                                                                    \
+    if (auto AYTTM_BUILTIN(sec) = this->AYTTM_BUILTIN(enterSection)(); !!AYTTM_BUILTIN(sec))
 #define AYTTM_EXPR_1(expr_mode, expr, expr_msg, eval, eval_args)                                   \
     AYTTM_EXPR_IMPL(expr_mode, expr, expr_msg, AYTTM_EVAL(eval, eval_args), AYTTM_EVAL_NONE)
 #define AYTTM_EXPR_2(expr_mode, expr, expr_msg, handler, eval, eval_args)                          \
@@ -276,16 +283,19 @@ public:
 
     bool AYTTM_BUILTIN(run)();
     bool AYTTM_BUILTIN(invokeExpr)(TestExpr const &, std::source_location const &);
+    std::shared_ptr<int> AYTTM_BUILTIN(enterSection)();
     friend std::ostream & operator<<(std::ostream &, TestCase const &);
 
 private:
     void recordResult(bool);
+    bool nextSection();
 
 private:
     std::string_view     m_name;
     std::source_location m_src_loc;
     TestCount            m_cnt;
     detail::Locksmith    m_section_lock;
+    std::weak_ptr<int>   m_section_flag;
 };
 using TestCases = std::vector<std::shared_ptr<TestCase>>;
 
@@ -446,6 +456,16 @@ inline bool TestExpr::run() const {
     return m_handler ? m_handler(ExprInfo(eval_helper)) : eval_helper();
 }
 
+inline bool TestCase::AYTTM_BUILTIN(run)() {
+    m_section_lock.reset();
+    do {
+        try {
+            AYTTM_BUILTIN(runImpl)();
+        } catch (TestTermination const &) {}
+    } while(nextSection());
+    return !m_cnt.failed_;
+}
+
 inline bool TestCase::AYTTM_BUILTIN(invokeExpr)(
     TestExpr const & expr, std::source_location const & expr_loc) {
     try {
@@ -470,14 +490,17 @@ inline bool TestCase::AYTTM_BUILTIN(invokeExpr)(
     return false;
 }
 
-inline bool TestCase::AYTTM_BUILTIN(run)() {
-    m_section_lock.reset();
-    do {
-        try {
-            AYTTM_BUILTIN(runImpl)();
-        } catch (TestTermination const &) {}
-    } while(m_section_lock.nextKey());
-    return !m_cnt.failed_;
+inline std::shared_ptr<int> TestCase::AYTTM_BUILTIN(enterSection)() {
+    if (!m_section_flag.expired()) {
+        // prevent nested sections
+        return nullptr;
+    }
+    if (!m_section_lock.unlocking()) {
+        return nullptr;
+    }
+    auto p_ret = std::make_shared<int>(1);
+    m_section_flag = p_ret;
+    return p_ret;
 }
 
 inline void TestCase::recordResult(bool b_pass) {
@@ -489,6 +512,10 @@ inline void TestCase::recordResult(bool b_pass) {
         ost << std::endl;
     }
     m_cnt.countOne(b_pass);
+}
+
+inline bool TestCase::nextSection() {
+    return m_section_lock.nextKey();
 }
 
 inline void TestGroup::run() {
