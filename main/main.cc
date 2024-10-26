@@ -1,5 +1,5 @@
+#define AYTESTM_CONFIG_MAIN
 #include <aytestm.hpp>
-#include <stdexcept>
 
 TEST_CASE("check true") {
     CHECK(true);
@@ -71,11 +71,5 @@ TEST_CASE("section") {
         }
     }
     CHECK(1 != 1);
-}
-
-int main()
-{
-    aytest_mini::TestContext::run();
-    return 0;
 }
 

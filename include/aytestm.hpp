@@ -26,7 +26,9 @@
  * aytestm.hpp - the lightest modern C++ single-header testing framework
  * The library's page: https://github.com/NoEvaa/AyTest-Mini
  *
- * Macro configure
+ * Configure micros
+ * - AYTESTM_CONFIG_MAIN
+ *     Generate a general `main` function.
  * - AYTESTM_DISABLE_MACRO
  *     Test macro will be disabled.
  * - AYTESTM_DISABLE_ANSI_COLOR
@@ -315,12 +317,19 @@ struct TestConfig {
     std::ostream & getOStream() const {
         return fn_get_ostream_ ? fn_get_ostream_() : std::cout;
     }
+    std::function<void(int, char**)> fn_parse_args_;
+    void parseArgs(int argc, char** argv) {
+        if (fn_parse_args_) {
+            fn_parse_args_(argc, argv);
+        }
+    }
 };
 
 class TestContext {
 public:
-    static void run() {
+    static int run() {
         getGroup().run();
+        return 0;
     }
     static TestConfig & getConfig() {
         static TestConfig s_config;
@@ -457,6 +466,7 @@ inline bool TestExpr::run() const {
 }
 
 inline bool TestCase::AYTTM_BUILTIN(run)() {
+    assert(m_section_flag.expired());
     m_section_lock.reset();
     do {
         try {
@@ -533,4 +543,10 @@ inline void TestGroup::run() {
         << std::endl;
 }
 }
+#ifdef AYTESTM_CONFIG_MAIN
+int main(int argc, char** argv) {
+    aytest_mini::TestContext::getConfig().parseArgs(argc, argv);
+    return aytest_mini::TestContext::run();
+}
+#endif
 
