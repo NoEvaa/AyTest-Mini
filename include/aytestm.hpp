@@ -123,6 +123,8 @@
 
 namespace aytest_mini {
 namespace detail {
+constexpr std::size_t kLineWidth = 80;
+
 constexpr char const * kStrEmpty = "";
 constexpr char const * kStrTab   = "    ";
 
@@ -134,6 +136,7 @@ constexpr char const * kStrDivider       = "----------";
 constexpr char const * kStrWavyDivider   = "~~~~~~~~~~";
 constexpr char const * kStrDoubleDivider = "==========";
 }
+
 typedef struct test_exception {
     test_exception() = default; 
     explicit test_exception(std::string const & msg) : m_msg(msg) {}
@@ -265,6 +268,12 @@ struct TestCount {
             ++failed_;
         }
     }
+    double passingRate() {
+        if (!total_) {
+            return 1.;
+        }
+        return double(passed_) / total_;
+    }
 };
 
 class TestCase {
@@ -351,6 +360,21 @@ int initTestCase(char const * p_name, std::source_location const & src_loc) {
 }
 
 namespace detail {
+enum class FontColor {
+    kDefault = 39,
+    kRed     = 31,
+    kGreen   = 32,
+    kCase    = 36,
+    kExpr    = 33,
+};
+
+inline std::ostream & operator<<(std::ostream & ost, FontColor c) {
+#ifndef AYTESTM_DISABLE_ANSI_COLOR
+    ost << "\033[" << static_cast<int>(c) << 'm';
+#endif
+    return ost;
+}
+
 inline std::string getExMsg(char const * desc) {
     std::stringstream ss;
     ss << desc << '\n'
@@ -363,14 +387,17 @@ inline std::ostream & outputToStream(std::ostream & ost, std::source_location co
 inline void outputFailedMsg(TestExpr const & expr,
     std::source_location const & expr_loc, std::string const & msg) {
     auto & ost = TestContext::getConfig().getOStream();
-    outputToStream(ost, expr_loc) << ": FAILED:\n";
-    ost << kStrTab << expr << '\n';
+    outputToStream(ost, expr_loc) << ':'
+        << FontColor::kRed << " FAILED:"
+        << FontColor::kDefault << '\n';
+    ost << FontColor::kExpr << kStrTab << expr
+        << FontColor::kDefault << '\n';
     if (!msg.empty()) {
         ost << msg << '\n';
     }
     ost << std::endl;
 }
-template <std::size_t N = 8>
+template <std::size_t N = kLineWidth / 10>
 std::ostream & outputToStreamRepeat(std::ostream & ost, char const * s) {
     for (std::size_t i = 0; i < N; ++i) {
         ost << s;
@@ -379,12 +406,19 @@ std::ostream & outputToStreamRepeat(std::ostream & ost, char const * s) {
 }
 }
 inline std::ostream & operator<<(std::ostream & ost, TestCount const & cnt) {
+    if (!cnt.total_) {
+        return ost << "- None -";
+    }
     ost << std::setw(5) << cnt.total_;
     if (cnt.passed_) {
-        ost << " |" << std::setw(5) << cnt.passed_ << " passed";
+        ost << " |" << detail::FontColor::kGreen
+            << std::setw(5) << cnt.passed_ << " passed"
+            << detail::FontColor::kDefault;
     }
     if (cnt.failed_) {
-        ost << " |" << std::setw(5) << cnt.failed_ << " failed";
+        ost << " |" << detail::FontColor::kRed
+            << std::setw(5) << cnt.failed_ << " failed"
+            << detail::FontColor::kDefault;
     }
     return ost;
 }
@@ -409,8 +443,8 @@ inline std::ostream & operator<<(std::ostream & ost, TestExpr const & te) {
 }
 inline std::ostream & operator<<(std::ostream & ost, TestCase const & tc) {
     detail::outputToStream(ost, tc.m_src_loc) << ":\n";
-    ost << "TEST CASE: " << tc.m_name;
-    return ost;
+    ost << "TEST CASE: " << detail::FontColor::kCase << tc.m_name;
+    return ost << detail::FontColor::kDefault;
 }
 
 inline bool handleRequire(ExprInfo const & expr) {
