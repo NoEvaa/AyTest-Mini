@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.15)
 # Project
 
 project(
-    AyTestMini
-    VERSION 0.1.0
+    AyTest_Mini
+    VERSION 0.2.0
     LANGUAGES CXX
 )
 

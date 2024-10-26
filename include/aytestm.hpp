@@ -46,7 +46,7 @@
 #include <iostream>
 #include <iomanip>
 
-#define AYTESTM_VERSION "0.1.0"
+#define AYTESTM_VERSION "0.2.0"
 
 #if !defined(AYTESTM_DISABLE_MACRO)
 #define TEST_CASE(case_name, ...)      AYTTM_TEST_CASE(case_name, __VA_ARGS__)
@@ -123,8 +123,6 @@
 
 namespace aytest_mini {
 namespace detail {
-constexpr std::size_t kLineWidth = 80;
-
 constexpr char const * kStrEmpty = "";
 constexpr char const * kStrTab   = "    ";
 
@@ -268,12 +266,6 @@ struct TestCount {
             ++failed_;
         }
     }
-    double passingRate() {
-        if (!total_) {
-            return 1.;
-        }
-        return double(passed_) / total_;
-    }
 };
 
 class TestCase {
@@ -397,7 +389,7 @@ inline void outputFailedMsg(TestExpr const & expr,
     }
     ost << std::endl;
 }
-template <std::size_t N = kLineWidth / 10>
+template <std::size_t N = 8>
 std::ostream & outputToStreamRepeat(std::ostream & ost, char const * s) {
     for (std::size_t i = 0; i < N; ++i) {
         ost << s;
@@ -579,8 +571,12 @@ inline void TestGroup::run() {
 }
 #ifdef AYTESTM_CONFIG_MAIN
 int main(int argc, char** argv) {
-    aytest_mini::TestContext::getConfig().parseArgs(argc, argv);
-    return aytest_mini::TestContext::run();
+    using namespace aytest_mini;
+    TestContext::getConfig().parseArgs(argc, argv);
+    TestContext::getConfig().getOStream()
+        << "AyTest-Mini v" << AYTESTM_VERSION
+        << '\n' << std::endl;
+    return TestContext::run();
 }
 #endif
 

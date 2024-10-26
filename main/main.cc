@@ -11,6 +11,7 @@ TEST_CASE("check") {
     CHECK(0 < 1);
     CHECK(0 > 1);
 }
+
 TEST_CASE("require true") {
     REQUIRE(true);
 }
@@ -22,12 +23,14 @@ TEST_CASE("require") {
     REQUIRE(0 > 1);
     CHECK(false);
 }
+
 namespace {
 inline void throwTest() {
     throw std::runtime_error{"throw test"};
 }
 inline void nothrowTest() {}
 }
+
 TEST_CASE("check throw") {
     CHECK_THROW(throwTest());
     CHECK_THROW(nothrowTest());
@@ -37,6 +40,7 @@ TEST_CASE("require throw") {
     REQUIRE_THROW(nothrowTest());
     CHECK(false);
 }
+
 TEST_CASE("check nothrow") {
     CHECK_NOTHROW(nothrowTest());
     CHECK_NOTHROW(throwTest());
@@ -46,6 +50,7 @@ TEST_CASE("require nothrow") {
     REQUIRE_NOTHROW(throwTest());
     CHECK(false);
 }
+
 TEST_CASE("check throw as") {
     CHECK_THROW_AS(std::string, throwTest());
     CHECK_THROW_AS(std::runtime_error, throwTest());
@@ -55,6 +60,7 @@ TEST_CASE("require throw as") {
     REQUIRE_THROW_AS(std::string, throwTest());
     CHECK(false);
 }
+
 TEST_CASE("section") {
     CHECK(0 != 0);
     SECTION("sec1") {
