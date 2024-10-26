@@ -22,6 +22,10 @@
  * SOFTWARE.
  */
 #pragma once
+/**
+ * aytestm.hpp - the lightest modern C++ single-header testing framework
+ * The library's page: https://github.com/NoEvaa/AyTest-Mini
+ */
 
 #include <cassert>
 #include <memory>
@@ -38,6 +42,7 @@
 
 #if !defined(AYTESTM_DISABLE_MACRO)
 #define TEST_CASE(case_name, ...)      AYTTM_TEST_CASE(case_name, __VA_ARGS__)
+#define SECTION(...)                   AYTTM_SECTION(__VA_ARGS__)
 #define CHECK(...)                     AYTTM_CHECK(__VA_ARGS__)
 #define REQUIRE(...)                   AYTTM_REQUIRE(__VA_ARGS__)
 #define CHECK_THROW(...)               AYTTM_CHECK_THROW(__VA_ARGS__)
@@ -55,6 +60,7 @@
 
 #define AYTTM_TEST_CASE(case_name, ...)                                                            \
     AYTTM_TEST_CASE_IMPL(AYTTM_CAT1(TestCase, __COUNTER__), case_name, __VA_ARGS__)
+#define AYTTM_SECTION(...) AYTTM_SECTION_IMPL(__VA_ARGS__)
 #define AYTTM_CHECK(...)   AYTTM_EXPR_1(BOOL, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), CHECK,)
 #define AYTTM_REQUIRE(...) AYTTM_EXPR_1(BOOL, __VA_ARGS__, AYTTM_STR(__VA_ARGS__), REQUIRE,)
 #define AYTTM_CHECK_THROW(...)                                                                     \
@@ -82,6 +88,7 @@
         aytest_mini::initTestCase<AYTTM_BUILTIN(class_name)>(case_name, AYTTM_SRC_LOC);            \
     }                                                                                              \
     void AYTTM_BUILTIN(class_name)::AYTTM_BUILTIN(runImpl)()
+#define AYTTM_SECTION_IMPL(...)
 #define AYTTM_EXPR_1(expr_mode, expr, expr_msg, eval, eval_args)                                   \
     AYTTM_EXPR_IMPL(expr_mode, expr, expr_msg, AYTTM_EVAL(eval, eval_args), AYTTM_EVAL_NONE)
 #define AYTTM_EXPR_2(expr_mode, expr, expr_msg, handler, eval, eval_args)                          \
@@ -328,6 +335,28 @@ std::ostream & outputToStreamRepeat(std::ostream & ost, char const * s) {
     }
     return ost;
 }
+
+class Locksmith {
+public:
+    void reset() {
+        m_num = m_key = m_keyhole = 0;
+    }
+    bool nextKey() {
+        m_keyhole = 0;
+        return ++m_key < m_num;
+    }
+    bool unlocking() {
+        bool b_ret = (m_key == m_keyhole++);
+        if (m_keyhole >= m_num) {
+            m_num = m_keyhole;
+        }
+        return b_ret;
+    }
+private:
+    std::size_t m_num     = 0;
+    std::size_t m_key     = 0;
+    std::size_t m_keyhole = 0;
+};
 }
 inline std::ostream & operator<<(std::ostream & ost, TestCount const & cnt) {
     ost << std::setw(5) << cnt.total_;
