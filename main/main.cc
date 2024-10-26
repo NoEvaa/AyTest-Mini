@@ -60,15 +60,12 @@ int main()
 {
     aytest_mini::detail::Locksmith ls;
     int mn = 3;
-    for (int i = 0;i<mn;++i){
-        std::cout << ls.unlocking() << std::endl;
-    }
-    while (ls.nextKey()) {
+    do {
+        for (int i = 0;i<mn;++i){
+            std::cout << ls.unlocking() << std::endl;
+        }
         std::cout << std::endl;
-    for (int i = 0;i<mn;++i){
-        std::cout << ls.unlocking() << std::endl;
-    }
-    }
+    } while (ls.nextKey());
     //aytest_mini::TestContext::run();
     return 0;
 }

@@ -166,6 +166,28 @@ inline std::string getExceptionInfo() {
     return "";
 }
 
+class Locksmith {
+public:
+    void reset() {
+        m_num = m_key = m_keyhole = 0;
+    }
+    bool nextKey() {
+        m_keyhole = 0;
+        return ++m_key < m_num;
+    }
+    bool unlocking() {
+        bool b_ret = (m_key == m_keyhole++);
+        if (m_keyhole >= m_num) {
+            m_num = m_keyhole;
+        }
+        return b_ret;
+    }
+private:
+    std::size_t m_num     = 0;
+    std::size_t m_key     = 0;
+    std::size_t m_keyhole = 0;
+};
+
 template <typename Func>
 class FuncInfo {
 public:
@@ -263,6 +285,7 @@ private:
     std::string_view     m_name;
     std::source_location m_src_loc;
     TestCount            m_cnt;
+    detail::Locksmith    m_section_lock;
 };
 using TestCases = std::vector<std::shared_ptr<TestCase>>;
 
@@ -335,28 +358,6 @@ std::ostream & outputToStreamRepeat(std::ostream & ost, char const * s) {
     }
     return ost;
 }
-
-class Locksmith {
-public:
-    void reset() {
-        m_num = m_key = m_keyhole = 0;
-    }
-    bool nextKey() {
-        m_keyhole = 0;
-        return ++m_key < m_num;
-    }
-    bool unlocking() {
-        bool b_ret = (m_key == m_keyhole++);
-        if (m_keyhole >= m_num) {
-            m_num = m_keyhole;
-        }
-        return b_ret;
-    }
-private:
-    std::size_t m_num     = 0;
-    std::size_t m_key     = 0;
-    std::size_t m_keyhole = 0;
-};
 }
 inline std::ostream & operator<<(std::ostream & ost, TestCount const & cnt) {
     ost << std::setw(5) << cnt.total_;
@@ -470,9 +471,12 @@ inline bool TestCase::AYTTM_BUILTIN(invokeExpr)(
 }
 
 inline bool TestCase::AYTTM_BUILTIN(run)() {
-    try {
-        AYTTM_BUILTIN(runImpl)();
-    } catch (TestTermination const &) {}
+    m_section_lock.reset();
+    do {
+        try {
+            AYTTM_BUILTIN(runImpl)();
+        } catch (TestTermination const &) {}
+    } while(m_section_lock.nextKey());
     return !m_cnt.failed_;
 }
 
