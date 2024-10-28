@@ -32,12 +32,12 @@ inline void nothrowTest() {}
 }
 
 TEST_CASE("check throw") {
-    CHECK_THROW(throwTest());
-    CHECK_THROW(nothrowTest());
+    CHECK_THROWS(throwTest());
+    CHECK_THROWS(nothrowTest());
 }
 TEST_CASE("require throw") {
-    REQUIRE_THROW(throwTest());
-    REQUIRE_THROW(nothrowTest());
+    REQUIRE_THROWS(throwTest());
+    REQUIRE_THROWS(nothrowTest());
     CHECK(false);
 }
 
@@ -52,12 +52,12 @@ TEST_CASE("require nothrow") {
 }
 
 TEST_CASE("check throw as") {
-    CHECK_THROW_AS(std::string, throwTest());
-    CHECK_THROW_AS(std::runtime_error, throwTest());
+    CHECK_THROWS_AS(std::string, throwTest());
+    CHECK_THROWS_AS(std::runtime_error, throwTest());
 }
 TEST_CASE("require throw as") {
-    REQUIRE_THROW_AS(std::runtime_error, throwTest());
-    REQUIRE_THROW_AS(std::string, throwTest());
+    REQUIRE_THROWS_AS(std::runtime_error, throwTest());
+    REQUIRE_THROWS_AS(std::string, throwTest());
     CHECK(false);
 }
 

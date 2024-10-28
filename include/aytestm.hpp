@@ -26,10 +26,10 @@
  * aytestm.hpp - the lightest modern C++ single-header testing framework
  * The library's page: https://github.com/NoEvaa/AyTest-Mini
  *
- * Configure micros
+ * Configuration micros
  * - AYTESTM_CONFIG_MAIN
  *     Generate a general `main` function.
- * - AYTESTM_DISABLE_MACRO
+ * - AYTESTM_DISABLE_TEST_MACRO
  *     Test macro will be disabled.
  * - AYTESTM_DISABLE_ANSI_COLOR
  *     Output without ansi color code.
@@ -48,50 +48,49 @@
 
 #define AYTESTM_VERSION "0.2.0"
 
-#if !defined(AYTESTM_DISABLE_MACRO)
-#define TEST_CASE(case_name, ...)      AYTTM_TEST_CASE(case_name, __VA_ARGS__)
-#define SECTION(...)                   AYTTM_SECTION(__VA_ARGS__)
-#define CHECK(...)                     AYTTM_CHECK(__VA_ARGS__)
-#define REQUIRE(...)                   AYTTM_REQUIRE(__VA_ARGS__)
-#define CHECK_THROW(...)               AYTTM_CHECK_THROW(__VA_ARGS__)
-#define REQUIRE_THROW(...)             AYTTM_REQUIRE_THROW(__VA_ARGS__)
-#define CHECK_NOTHROW(...)             AYTTM_CHECK_NOTHROW(__VA_ARGS__)
-#define REQUIRE_NOTHROW(...)           AYTTM_REQUIRE_NOTHROW(__VA_ARGS__)
-#define CHECK_THROW_AS(ex_type, ...)   AYTTM_CHECK_THROW_AS(ex_type, __VA_ARGS__)
-#define REQUIRE_THROW_AS(ex_type, ...) AYTTM_REQUIRE_THROW_AS(ex_type, __VA_ARGS__)
+#if !defined(AYTESTM_DISABLE_TEST_MACRO)
+#define TEST_CASE(case_name, ...)       AYTTM_TEST_CASE(case_name, __VA_ARGS__)
+#define SECTION(...)                    AYTTM_SECTION(__VA_ARGS__)
+#define CHECK(...)                      AYTTM_CHECK(__VA_ARGS__)
+#define REQUIRE(...)                    AYTTM_REQUIRE(__VA_ARGS__)
+#define CHECK_THROWS(...)               AYTTM_CHECK_THROWS(__VA_ARGS__)
+#define REQUIRE_THROWS(...)             AYTTM_REQUIRE_THROWS(__VA_ARGS__)
+#define CHECK_NOTHROW(...)              AYTTM_CHECK_NOTHROW(__VA_ARGS__)
+#define REQUIRE_NOTHROW(...)            AYTTM_REQUIRE_NOTHROW(__VA_ARGS__)
+#define CHECK_THROWS_AS(ex_type, ...)   AYTTM_CHECK_THROWS_AS(ex_type, __VA_ARGS__)
+#define REQUIRE_THROWS_AS(ex_type, ...) AYTTM_REQUIRE_THROWS_AS(ex_type, __VA_ARGS__)
 #endif
 
 #define AYTTM_STR(...)   #__VA_ARGS__
 #define AYTTM_CAT(a, b)  a##b
 #define AYTTM_CAT1(a, b) AYTTM_CAT(a, b)
-#define AYTTM_CAT2(a, b) AYTTM_CAT1(a, b)
 
 #define AYTTM_TEST_CASE(case_name, ...)                                                            \
     AYTTM_TEST_CASE_IMPL(AYTTM_CAT1(TestCase, __COUNTER__), case_name, __VA_ARGS__)
 #define AYTTM_SECTION(...) AYTTM_SECTION_IMPL(__VA_ARGS__)
 #define AYTTM_CHECK(...)   AYTTM_EXPR_1(BOOL, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK,)
 #define AYTTM_REQUIRE(...) AYTTM_EXPR_1(BOOL, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE,)
-#define AYTTM_CHECK_THROW(...)                                                                     \
-    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK, THROW,)
-#define AYTTM_REQUIRE_THROW(...)                                                                   \
-    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE, THROW,)
+#define AYTTM_CHECK_THROWS(...)                                                                    \
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK, THROWS,)
+#define AYTTM_REQUIRE_THROWS(...)                                                                  \
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE, THROWS,)
 #define AYTTM_CHECK_NOTHROW(...)                                                                   \
     AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK, NOTHROW,)
 #define AYTTM_REQUIRE_NOTHROW(...)                                                                 \
     AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE, NOTHROW,)
-#define AYTTM_CHECK_THROW_AS(_ex, ...)                                                             \
-    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK, THROW_AS, _ex)
-#define AYTTM_REQUIRE_THROW_AS(_ex, ...)                                                           \
-    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE, THROW_AS, _ex)
+#define AYTTM_CHECK_THROWS_AS(_ex, ...)                                                            \
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), CHECK, THROWS_AS, _ex)
+#define AYTTM_REQUIRE_THROWS_AS(_ex, ...)                                                          \
+    AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE, THROWS_AS, _ex)
 
 #define AYTTM_BUILTIN(_n) AYTTM_CAT(__A_Y_T_E_S_T_M__builtin__, _n)
 #define AYTTM_SRC_LOC     std::source_location::current()
 #define AYTTM_TEST_CASE_IMPL(class_name, case_name, ...)                                           \
+    namespace {                                                                                    \
     class AYTTM_BUILTIN(class_name) : public aytest_mini::TestCase {                               \
     public:                                                                                        \
         void AYTTM_BUILTIN(runImpl)() override;                                                    \
     };                                                                                             \
-    namespace {                                                                                    \
     static int AYTTM_BUILTIN(AYTTM_CAT(s_i_, class_name)) =                                        \
         aytest_mini::initTestCase<AYTTM_BUILTIN(class_name)>(case_name, AYTTM_SRC_LOC);            \
     }                                                                                              \
@@ -113,13 +112,13 @@
     aytest_mini::ExprInfo([&]() { return static_cast<bool>(__VA_ARGS__); }, msg)
 #define AYTTM_EXPRINFO_VOID(msg, ...)                                                              \
     aytest_mini::ExprInfo([&]() { static_cast<void>(__VA_ARGS__); return true; }, msg)
-#define AYTTM_EVAL_NONE          nullptr, ""
-#define AYTTM_EVAL(_mode, ...)   AYTTM_CAT(AYTTM_EVAL_, _mode)(__VA_ARGS__), AYTTM_STR(_mode)
-#define AYTTM_EVAL_CHECK(...)    nullptr
-#define AYTTM_EVAL_REQUIRE(...)  aytest_mini::handleRequire
-#define AYTTM_EVAL_THROW(...)    aytest_mini::evalThrow
-#define AYTTM_EVAL_NOTHROW(...)  aytest_mini::evalNoThrow
-#define AYTTM_EVAL_THROW_AS(...) aytest_mini::evalThrowAs<__VA_ARGS__>
+#define AYTTM_EVAL_NONE           nullptr, ""
+#define AYTTM_EVAL(_mode, ...)    AYTTM_CAT(AYTTM_EVAL_, _mode)(__VA_ARGS__), AYTTM_STR(_mode)
+#define AYTTM_EVAL_CHECK(...)     nullptr
+#define AYTTM_EVAL_REQUIRE(...)   aytest_mini::handleRequire
+#define AYTTM_EVAL_THROWS(...)    aytest_mini::evalThrow
+#define AYTTM_EVAL_NOTHROW(...)   aytest_mini::evalNoThrow
+#define AYTTM_EVAL_THROWS_AS(...) aytest_mini::evalThrowAs<__VA_ARGS__>
 
 namespace aytest_mini {
 namespace detail {
@@ -286,7 +285,7 @@ public:
 
     bool AYTTM_BUILTIN(run)();
     bool AYTTM_BUILTIN(invokeExpr)(TestExpr const &, std::source_location const &);
-    std::shared_ptr<int> AYTTM_BUILTIN(enterSection)();
+    std::shared_ptr<bool> AYTTM_BUILTIN(enterSection)();
     friend std::ostream & operator<<(std::ostream &, TestCase const &);
 
 private:
@@ -298,7 +297,7 @@ private:
     std::source_location m_src_loc;
     TestCount            m_cnt;
     detail::Locksmith    m_section_lock;
-    std::weak_ptr<int>   m_section_flag;
+    std::weak_ptr<bool>  m_section_flag;
 };
 using TestCases = std::vector<std::shared_ptr<TestCase>>;
 
@@ -526,7 +525,7 @@ inline bool TestCase::AYTTM_BUILTIN(invokeExpr)(
     return false;
 }
 
-inline std::shared_ptr<int> TestCase::AYTTM_BUILTIN(enterSection)() {
+inline std::shared_ptr<bool> TestCase::AYTTM_BUILTIN(enterSection)() {
     if (!m_section_flag.expired()) {
         // prevent nested sections
         return nullptr;
@@ -534,7 +533,7 @@ inline std::shared_ptr<int> TestCase::AYTTM_BUILTIN(enterSection)() {
     if (!m_section_lock.unlocking()) {
         return nullptr;
     }
-    auto p_ret = std::make_shared<int>(1);
+    auto p_ret = std::make_shared<bool>(true);
     m_section_flag = p_ret;
     return p_ret;
 }
