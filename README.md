@@ -1,6 +1,10 @@
 # Ayin Test - Mini
 
-AyTest-Mini is a lightest modern single-header unit testing framework for C++20 and later.
+AyTest-Mini is a lightest modern header-only unit testing framework for C++20 and later.
+It only contains the minimum code quantity required to implement unit testing.
+
+This framework is now fully completed and no further features will be added.
+If you need more features, please consider using other testing frameworks.
 
 ## Quick Start
 
@@ -28,7 +32,7 @@ TEST_CASE("case 1") {
 
 ### Testing Case Macros
 
-- TEST_CASE( case name, ... )
+- **TEST_CASE( case name, ... )**
 
 ```c++
 TEST_CASE("case 1") {
@@ -38,7 +42,7 @@ TEST_CASE("case 1") {
 }
 ```
 
-- SECTION(...)
+- **SECTION(...)**
 
 ```c++
 TEST_CASE("") {
@@ -55,22 +59,51 @@ TEST_CASE("") {
 
 ### Assertion Macros
 
-- CHECK( expression )
-- REQUIRE( expression )
+The `REQUIRE` family of macros tests an expression and aborts the test case if it fails.
+The `CHECK` family are equivalent but execution continues in the same test case even if the assertion fails.
+
+- **CHECK( expression )**
+- **REQUIRE( expression )**
 
 Evaluates the expression and check if the result is true.
 If an exception is thrown, it is caught, reported, and counted as a failure.
 
-- CHECK_NOTHROW( expression )
-- REQUIRE_NOTHROW( expression )
+Note that the expression should return a boolean value.
 
-- CHECK_THROWS( expression )
-- REQUIRE_THROWS( expression )
+```c++
+CHECK( 1 + 1 == 2 );
+REQUIRE( 1 + 1 != 0 );
+```
 
-- CHECK_THROWS_AS( exception, expression )
-- REQUIRE_THROWS_AS( exception type, expression )
+- **CHECK_NOTHROW( expression )**
+- **REQUIRE_NOTHROW( expression )**
+
+Expects that no exception is thrown during evaluation of the expression.
+
+```c++
+CHECK_NOTHROW( [](){}() );
+REQUIRE_NOTHROW( [](){}() );
+```
+
+- **CHECK_THROWS( expression )**
+- **REQUIRE_THROWS( expression )**
+
+Expects that an exception (of any type) is be thrown during evaluation of the expression.
+
+```c++
+CHECK_THROWS( [](){}( throw int{0}; ) );
+REQUIRE_THROWS( [](){}( throw int{0}; ) );
+```
+
+- **CHECK_THROWS_AS( exception type, expression )**
+- **REQUIRE_THROWS_AS( exception type, expression )**
 
 Expects that an exception of the specified type is thrown during evaluation of the expression.
+
+```c++
+CHECK_THROWS_AS( int, [](){}( throw int{0}; ) );
+REQUIRE_THROWS_AS( int, [](){}( throw int{0}; ) );
+```
 
 ### Compile-time Configuration
 
@@ -78,27 +111,27 @@ Macros need to be defined before including the header file.
 
 #### Generating default main function
 
+This option can be used to generate a main function automatically.
+
 ```c++
 #define AYTESTM_CONFIG_MAIN
 ```
 
-This option can be used to generate a main function automatically.
-
 #### Disabling ANSI color
+
+This option can be used to disable the output of ANSI color code.
 
 ```c++
 #define AYTESTM_DISABLE_ANSI_COLOR
 ```
 
-This option can be used to disable the output of ANSI color code.
-
 #### Disabling testing macros 
+
+This option can be used to disable the testing macros.
 
 ```c++
 #define AYTESTM_DISABLE_TEST_MACRO
 ```
-
-This option can be used to disable the testing macros.
 
 ### More
 

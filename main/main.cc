@@ -49,6 +49,7 @@ TEST_CASE("check nothrow") {
 }
 TEST_CASE("check") {
     CHECK(throwTest());
+    REQUIRE(throwTest());
     CHECK(false);
 }
 TEST_CASE("require nothrow") {
