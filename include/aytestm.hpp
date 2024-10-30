@@ -359,7 +359,6 @@ enum class FontColor {
     kCase    = 36,
     kExpr    = 33,
 };
-
 inline std::ostream & operator<<(std::ostream & ost, FontColor c) {
 #ifndef AYTESTM_DISABLE_ANSI_COLOR
     ost << "\033[" << static_cast<int>(c) << 'm';
@@ -522,7 +521,6 @@ inline bool TestCase::AYTTM_BUILTIN(invokeExpr)(
     } catch (...) {
         recordResult(false);
         detail::outputFailedMsg(expr, expr_loc, detail::getExMsg(detail::kStrUnexpectedEx));
-        throw TestTermination{};
     }
     return false;
 }
