@@ -6,7 +6,6 @@ Standard:        c++20
 AccessModifierOffset: -4
 ColumnLimit:     120
 IndentWidth:     4
-SortIncludes:    Never
 TabWidth:        4
 UseTab:          Never
 ...

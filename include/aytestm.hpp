@@ -23,14 +23,14 @@
  */
 #pragma once
 /**
- * aytestm.hpp - the lightest modern C++ single-header testing framework
+ * aytestm.hpp - the lightest modern C++ single-header unit testing framework
  * The library's page: https://github.com/NoEvaa/AyTest-Mini
  *
  * Configuration micros
  * - AYTESTM_CONFIG_MAIN
  *     Generate a general `main` function.
  * - AYTESTM_DISABLE_TEST_MACRO
- *     Test macro will be disabled.
+ *     Testing macro will be disabled.
  * - AYTESTM_DISABLE_ANSI_COLOR
  *     Output without ansi color code.
  */
@@ -46,7 +46,7 @@
 #include <iostream>
 #include <iomanip>
 
-#define AYTESTM_VERSION "0.2.0"
+#define AYTESTM_VERSION "0.3.0"
 
 #if !defined(AYTESTM_DISABLE_TEST_MACRO)
 #define TEST_CASE(case_name, ...)       AYTTM_TEST_CASE(case_name, __VA_ARGS__)
@@ -84,7 +84,7 @@
     AYTTM_EXPR_2(VOID, (__VA_ARGS__), AYTTM_STR(__VA_ARGS__), REQUIRE, THROWS_AS, _ex)
 
 #define AYTTM_BUILTIN(_n) AYTTM_CAT(__A_Y_T_E_S_T_M__builtin__, _n)
-#define AYTTM_SRC_LOC     std::source_location::current()
+#define AYTTM_SRC_LOC     aytest_mini::SrcLoc::current()
 #define AYTTM_TEST_CASE_IMPL(class_name, case_name, ...)                                           \
     namespace {                                                                                    \
     class AYTTM_BUILTIN(class_name) : public aytest_mini::TestCase {                               \
@@ -94,7 +94,7 @@
     static int AYTTM_BUILTIN(AYTTM_CAT(s_i_, class_name)) =                                        \
         aytest_mini::initTestCase<AYTTM_BUILTIN(class_name)>(case_name, AYTTM_SRC_LOC);            \
     }                                                                                              \
-    void AYTTM_BUILTIN(class_name)::AYTTM_BUILTIN(runImpl)()
+    inline void AYTTM_BUILTIN(class_name)::AYTTM_BUILTIN(runImpl)()
 #define AYTTM_SECTION_IMPL(...)                                                                    \
     if (auto AYTTM_BUILTIN(sec) = this->AYTTM_BUILTIN(enterSection)(); !!AYTTM_BUILTIN(sec))
 #define AYTTM_EXPR_1(expr_mode, expr, expr_msg, eval, eval_args)                                   \
@@ -151,6 +151,7 @@ typedef struct test_termination : TestException {
     explicit test_termination(std::string const & msg) : TestException(msg) {}
 } TestTermination;
 
+using SrcLoc = std::source_location;
 namespace detail {
 template <typename T>
 T const & exception_cast(auto const & ex) {
@@ -274,7 +275,7 @@ public:
     void AYTTM_BUILTIN(setName)(char const * case_name) {
         m_name = case_name;
     }
-    void AYTTM_BUILTIN(setSrcLoc)(std::source_location const & src_loc) {
+    void AYTTM_BUILTIN(setSrcLoc)(SrcLoc const & src_loc) {
         m_src_loc = src_loc;
     }
     TestCount const & AYTTM_BUILTIN(getTestCount)() {
@@ -284,7 +285,7 @@ public:
     virtual void AYTTM_BUILTIN(runImpl)() = 0;
 
     bool AYTTM_BUILTIN(run)();
-    bool AYTTM_BUILTIN(invokeExpr)(TestExpr const &, std::source_location const &);
+    bool AYTTM_BUILTIN(invokeExpr)(TestExpr const &, SrcLoc const &);
     std::shared_ptr<bool> AYTTM_BUILTIN(enterSection)();
     friend std::ostream & operator<<(std::ostream &, TestCase const &);
 
@@ -293,11 +294,11 @@ private:
     bool nextSection();
 
 private:
-    std::string_view     m_name;
-    std::source_location m_src_loc;
-    TestCount            m_cnt;
-    detail::Locksmith    m_section_lock;
-    std::weak_ptr<bool>  m_section_flag;
+    std::string_view    m_name;
+    SrcLoc              m_src_loc;
+    TestCount           m_cnt;
+    detail::Locksmith   m_section_lock;
+    std::weak_ptr<bool> m_section_flag;
 };
 using TestCases = std::vector<std::shared_ptr<TestCase>>;
 
@@ -342,7 +343,7 @@ public:
 };
 
 template <typename T>
-int initTestCase(char const * p_name, std::source_location const & src_loc) {
+int initTestCase(char const * p_name, SrcLoc const & src_loc) {
     auto p_tcase = std::make_shared<T>();
     p_tcase->AYTTM_BUILTIN(setName)(p_name);
     p_tcase->AYTTM_BUILTIN(setSrcLoc)(src_loc);
@@ -372,11 +373,11 @@ inline std::string getExMsg(char const * desc) {
        << kStrTab << getExceptionInfo();
     return ss.str();
 }
-inline std::ostream & outputToStream(std::ostream & ost, std::source_location const & src_loc) {
+inline std::ostream & outputToStream(std::ostream & ost, SrcLoc const & src_loc) {
     return ost << src_loc.file_name() << "(" << src_loc.line() << ")";
 }
 inline void outputFailedMsg(TestExpr const & expr,
-    std::source_location const & expr_loc, std::string const & msg) {
+    SrcLoc const & expr_loc, std::string const & msg) {
     auto & ost = TestContext::getConfig().getOStream();
     outputToStream(ost, expr_loc) << ':'
         << FontColor::kRed << " FAILED:"
@@ -502,7 +503,7 @@ inline bool TestCase::AYTTM_BUILTIN(run)() {
 }
 
 inline bool TestCase::AYTTM_BUILTIN(invokeExpr)(
-    TestExpr const & expr, std::source_location const & expr_loc) {
+    TestExpr const & expr, SrcLoc const & expr_loc) {
     try {
         if (expr.run()) {
             recordResult(true);
@@ -521,6 +522,7 @@ inline bool TestCase::AYTTM_BUILTIN(invokeExpr)(
     } catch (...) {
         recordResult(false);
         detail::outputFailedMsg(expr, expr_loc, detail::getExMsg(detail::kStrUnexpectedEx));
+        throw TestTermination{};
     }
     return false;
 }

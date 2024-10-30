@@ -25,10 +25,13 @@ TEST_CASE("require") {
 }
 
 namespace {
-inline void throwTest() {
+inline bool throwTest() {
     throw std::runtime_error{"throw test"};
+    return false;
 }
-inline void nothrowTest() {}
+inline bool nothrowTest() {
+    return false;
+}
 }
 
 TEST_CASE("check throw") {
@@ -40,10 +43,13 @@ TEST_CASE("require throw") {
     REQUIRE_THROWS(nothrowTest());
     CHECK(false);
 }
-
 TEST_CASE("check nothrow") {
     CHECK_NOTHROW(nothrowTest());
     CHECK_NOTHROW(throwTest());
+}
+TEST_CASE("check") {
+    CHECK(throwTest());
+    CHECK(false);
 }
 TEST_CASE("require nothrow") {
     REQUIRE_NOTHROW(nothrowTest());
