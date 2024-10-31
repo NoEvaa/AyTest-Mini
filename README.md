@@ -31,10 +31,10 @@ TEST_CASE("case 1") {
 ```
 
 This will compile to a complete executable program. 
-If you run it, it will execute all test cases (in this case there is just one), 
-report any failures, report a summary of how many tests passed and failed and return the number of failed tests.
+If you run it, it will execute all test cases (in this example there is just one), 
+report any failures and a summary of how many tests passed and failed.
 
-After compile and run cycle, we will see a test failure. 
+After compile and run cycle, we will see two test failures. 
 The output will look something like:
 
 ```txt
@@ -163,7 +163,7 @@ This option can be used to disable the output of ANSI color code.
 #define AYTESTM_DISABLE_ANSI_COLOR
 ```
 
-#### Disabling testing macros 
+#### Disabling testing macros
 
 This option can be used to disable the testing macros.
 
