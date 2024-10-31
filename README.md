@@ -1,9 +1,9 @@
 # Ayin Test - Mini
 
-AyTest-Mini is a lightest modern header-only unit testing framework for C++20 and later.
+AyTest-Mini is a lightest modern header-only unit testing framework for C++20 and later. 
 It only contains the minimal lines of code required to implement unit testing.
 
-This framework is now fully completed and no further features will be added.
+This framework is now fully completed and no further features will be planned to add. 
 If you want to get more features, please consider using other testing frameworks.
 
 ## Quick Start
@@ -29,7 +29,13 @@ TEST_CASE("case 1") {
     CHECK_THROWS(pow2(0));
 }
 ```
-The testing result will be outputted like this:
+
+This will compile to a complete executable program. 
+If you run it, it will execute all test cases (in this case there is just one), 
+report any failures, report a summary of how many tests passed and failed and return the number of failed tests.
+
+After compile and run cycle, we will see a test failure. 
+The output will look something like:
 
 ```txt
 AyTest-Mini v1.0.0
@@ -58,6 +64,9 @@ assertions:     4 |    3 passed |    1 failed
 
 - **TEST_CASE( case name, ... )**
 
+Any assertion expression must be defined in one test case. 
+Any number of test cases can be defined in an executable program.
+
 ```c++
 TEST_CASE("case 1") {
     assertion expression
@@ -67,6 +76,10 @@ TEST_CASE("case 1") {
 ```
 
 - **SECTION(...)**
+
+Each run through a test case will execute one, and only one, section.
+
+Note that section can not be nested or in a cycle!
 
 ```c++
 TEST_CASE("") {
@@ -84,12 +97,13 @@ TEST_CASE("") {
 ### Assertion Macros
 
 The `REQUIRE` family of macros tests an expression and aborts the test case if it fails.
+
 The `CHECK` family are equivalent but execution continues in the same test case even if the assertion fails.
 
 - **CHECK( expression )**
 - **REQUIRE( expression )**
 
-Evaluates the expression and check if the result is true.
+Evaluates the expression and check if the result is true. 
 If an exception is thrown, it is caught, reported, and counted as a failure.
 
 Note that the expression should return a boolean value.
