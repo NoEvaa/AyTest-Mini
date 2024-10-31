@@ -1,10 +1,10 @@
 # Ayin Test - Mini
 
 AyTest-Mini is a lightest modern header-only unit testing framework for C++20 and later.
-It only contains the minimum code quantity required to implement unit testing.
+It only contains the minimal lines of code required to implement unit testing.
 
 This framework is now fully completed and no further features will be added.
-If you need more features, please consider using other testing frameworks.
+If you want to get more features, please consider using other testing frameworks.
 
 ## Quick Start
 
@@ -25,7 +25,31 @@ TEST_CASE("case 1") {
     CHECK(pow2(1) == 1);
     CHECK(pow2(2) == 4);
     CHECK(pow2(10) == 100);
+    CHECK(pow2(1) + 1 == 3);
+    CHECK_THROWS(pow2(0));
 }
+```
+The testing result will be outputted like this:
+
+```txt
+AyTest-Mini v1.0.0
+
+--------------------------------------------------------------------------------
+../../../tests/main.test.cc(6):
+TEST CASE: case 1 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+../../../tests/main.cc(10): FAILED:
+    CHECK( pow2(1) + 1 == 3 )
+
+../../../tests/main.cc(11): FAILED:
+    CHECK_THROWS( pow2(0) )
+No exception thrown.
+
+================================================================================
+test cases:     1 |    1 failed 
+assertions:     4 |    3 passed |    1 failed
 ```
 
 ## Tutorial
@@ -91,8 +115,8 @@ REQUIRE_NOTHROW( [](){}() );
 Expects that an exception (of any type) is be thrown during evaluation of the expression.
 
 ```c++
-CHECK_THROWS( [](){}( throw int{0}; ) );
-REQUIRE_THROWS( [](){}( throw int{0}; ) );
+CHECK_THROWS( [](){ throw int{0}; }()) );
+REQUIRE_THROWS( [](){ throw int{0}; }()) );
 ```
 
 - **CHECK_THROWS_AS( exception type, expression )**
@@ -101,8 +125,8 @@ REQUIRE_THROWS( [](){}( throw int{0}; ) );
 Expects that an exception of the specified type is thrown during evaluation of the expression.
 
 ```c++
-CHECK_THROWS_AS( int, [](){}( throw int{0}; ) );
-REQUIRE_THROWS_AS( int, [](){}( throw int{0}; ) );
+CHECK_THROWS_AS( int, [](){ throw int{0}; }() );
+REQUIRE_THROWS_AS( int, [](){ throw int{0}; }()) );
 ```
 
 ### Compile-time Configuration
@@ -141,7 +165,7 @@ Maybe you can read [Catch2 documentation](https://catch2-temp.readthedocs.io/en/
 
 - [AyTest](https://github.com/NoEvaa/AyTest)
 
-- [catch2](https://github.com/catchorg/Catch2)
+- [Catch2](https://github.com/catchorg/Catch2)
 
 - [doctest](https://github.com/doctest/doctest)
 

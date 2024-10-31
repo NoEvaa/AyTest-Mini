@@ -1,6 +1,7 @@
 #define AYTESTM_CONFIG_MAIN
 #include <aytestm.hpp>
 
+#if 1
 TEST_CASE("check true") {
     CHECK(true);
 }
@@ -85,4 +86,15 @@ TEST_CASE("section") {
     }
     CHECK(1 != 1);
 }
+#else
+int pow2(int x) { return x * x; }
+
+TEST_CASE("case 1") {
+    CHECK(pow2(1) == 1);
+    CHECK(pow2(2) == 4);
+    CHECK(pow2(10) == 100);
+    CHECK(pow2(1) + 1 == 3);
+    CHECK_THROWS(pow2(0));
+}
+#endif
 
