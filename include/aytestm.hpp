@@ -46,7 +46,7 @@
 #include <iostream>
 #include <iomanip>
 
-#define AYTESTM_VERSION "0.3.0"
+#define AYTESTM_VERSION "1.0.0"
 
 #if !defined(AYTESTM_DISABLE_TEST_MACRO)
 #define TEST_CASE(case_name, ...)       AYTTM_TEST_CASE(case_name, __VA_ARGS__)
