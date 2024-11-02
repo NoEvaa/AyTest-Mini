@@ -152,7 +152,7 @@ REQUIRE_THROWS_AS( int, [](){ throw int{0}; }()) );
 
 配置宏需要定义在引入头文件前。
 
-#### 生成默认主函数
+- 生成默认主函数
 
 该选项能用于自动生成一个主函数。
 
@@ -160,7 +160,7 @@ REQUIRE_THROWS_AS( int, [](){ throw int{0}; }()) );
 #define AYTESTM_CONFIG_MAIN
 ```
 
-#### 禁用 ANSI 颜色码
+- 禁用 ANSI 颜色码
 
 该选项能用于禁用 ANSI 颜色码的输出。
 
@@ -168,7 +168,7 @@ REQUIRE_THROWS_AS( int, [](){ throw int{0}; }()) );
 #define AYTESTM_DISABLE_ANSI_COLOR
 ```
 
-#### 禁用测试宏
+- 禁用测试宏
 
 该选项能用于禁用测试宏。
 

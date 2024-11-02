@@ -147,7 +147,7 @@ REQUIRE_THROWS_AS( int, [](){ throw int{0}; }()) );
 
 Macros need to be defined before including the header file.
 
-#### Generating default main function
+- Generating default main function
 
 This option can be used to generate a main function automatically.
 
@@ -155,7 +155,7 @@ This option can be used to generate a main function automatically.
 #define AYTESTM_CONFIG_MAIN
 ```
 
-#### Disabling ANSI color
+- Disabling ANSI color
 
 This option can be used to disable the output of ANSI color code.
 
@@ -163,7 +163,7 @@ This option can be used to disable the output of ANSI color code.
 #define AYTESTM_DISABLE_ANSI_COLOR
 ```
 
-#### Disabling testing macros
+- Disabling testing macros
 
 This option can be used to disable the testing macros.
 
