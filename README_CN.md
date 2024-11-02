@@ -1,10 +1,10 @@
 # Ayin Test - Mini
 
 AyTest-Mini 是一个轻量的、现代的、仅头文件的单元测试框架，可用于C++20以及更高版本。
-它仅包含了实现单元测试所需的最少代码量。
+它仅包含了实现单元测试所需的最少代码。
 
-该框架目前已经完全完成，未来将不会再有新功能加入。
-如果您希望获取更多功能，请考虑使用其他测试框架。
+该框架目前已经完全完成，无计划加入其他新功能。
+如果您希望获取更多功能，请考虑使用[其他测试框架](#友情链接)。
 
 ## 适用场景
 
@@ -14,7 +14,7 @@ AyTest-Mini 是一个轻量的、现代的、仅头文件的单元测试框架�
 
 ## 快速开始
 
-要想使用该模块，您仅需下载最新版本的头文件并将其包含到您的源码文件中（或者直接将该仓库作为一个子模块）。
+要想使用该模块，您仅需下载最新版本的头文件并将其包含到您的源码文件中（或者直接将该仓库作为您项目的一个子模块）。
 
 ### 一个简单例子
 
@@ -36,10 +36,9 @@ TEST_CASE("case 1") {
 ```
 
 这段代码会编译为一个完整的可执行程序。
-如果你运行它，它将执行所有测试用例（在本例中，只有一个），
+如果运行它，它将执行所有测试用例（在本例中，只有一个），
 然后报告任何失败以及通过和失败的测试数量。
-
-在编译和运行后，我们能够看到两个测试失败项。
+在编译和运行后能够看到两个测试失败项。
 输出结果如下所示：
 
 ```txt
@@ -69,8 +68,8 @@ assertions:     4 |    3 passed |    1 failed
 
 - **TEST_CASE( case name, ... )**
 
-Any assertion expression must be defined in one test case. 
-Any number of test cases can be defined in an executable program.
+任何断言表达式必须被定义在一个测试用例中。
+在一个可执行程序中可以有任意数量的测试用例。
 
 ```c++
 TEST_CASE("case 1") {
@@ -80,11 +79,12 @@ TEST_CASE("case 1") {
 }
 ```
 
-- **SECTION(...)**
+- **SECTION( ... )**
 
-Each run through a test case will execute one, and only one, section.
+一个测试用例每次运行时只会执行其中的一个`section`，
+测试用例会被重复运行直至所有有效的`section`被执行。
 
-Note that section can not be nested or in a cycle!
+请注意本模块中的`section`不能够被嵌套或处于循环内！
 
 ```c++
 TEST_CASE("") {
@@ -101,17 +101,17 @@ TEST_CASE("") {
 
 ### 断言宏
 
-The `REQUIRE` family of macros tests an expression and aborts the test case if it fails.
+`REQUIRE`系列宏会对表达式进行测试，在表达式断言失败后会中断测试用例。
 
-The `CHECK` family are equivalent but execution continues in the same test case even if the assertion fails.
+`CHECK`系列宏同样测试表达式，但即使断言失败，测试用例仍将继续运行。
 
 - **CHECK( expression )**
 - **REQUIRE( expression )**
 
-Evaluates the expression and check if the result is true. 
-If an exception is thrown, it is caught, reported, and counted as a failure.
+执行表达式并检查结果是否为真。
+如果一个异常被抛出，它将会被捕获、报告并计为失败。
 
-Note that the expression should return a boolean value.
+请注意表达式应该返回一个布尔值。
 
 ```c++
 CHECK( 1 + 1 == 2 );
@@ -121,7 +121,7 @@ REQUIRE( 1 + 1 != 0 );
 - **CHECK_NOTHROW( expression )**
 - **REQUIRE_NOTHROW( expression )**
 
-Expects that no exception is thrown during evaluation of the expression.
+预期表达式在执行期间不会抛出异常。
 
 ```c++
 CHECK_NOTHROW( [](){}() );
@@ -131,7 +131,7 @@ REQUIRE_NOTHROW( [](){}() );
 - **CHECK_THROWS( expression )**
 - **REQUIRE_THROWS( expression )**
 
-Expects that an exception (of any type) is be thrown during evaluation of the expression.
+预期表达式在执行期间会抛出（任何类型）异常。
 
 ```c++
 CHECK_THROWS( [](){ throw int{0}; }()) );
@@ -141,7 +141,7 @@ REQUIRE_THROWS( [](){ throw int{0}; }()) );
 - **CHECK_THROWS_AS( exception type, expression )**
 - **REQUIRE_THROWS_AS( exception type, expression )**
 
-Expects that an exception of the specified type is thrown during evaluation of the expression.
+预期表达式在执行期间会抛出指定类型的异常。
 
 ```c++
 CHECK_THROWS_AS( int, [](){ throw int{0}; }() );

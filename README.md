@@ -4,7 +4,7 @@ AyTest-Mini is a lightest modern header-only unit testing framework for C++20 an
 It only contains the minimal lines of code required to implement unit testing.
 
 This framework is now fully completed and no further features will be planned to add. 
-If you want to get more features, please consider using other testing frameworks.
+If you want to get more features, please consider using [other testing frameworks](#friendship-link).
 
 ## Quick Start
 
