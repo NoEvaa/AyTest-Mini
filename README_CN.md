@@ -41,7 +41,7 @@ TEST_CASE("case 1") {
 在编译和运行后能够看到两个测试失败项。
 输出结果如下所示：
 
-```txt
+```
 AyTest-Mini v1.0.0
 
 --------------------------------------------------------------------------------
@@ -88,6 +88,7 @@ TEST_CASE("case 1") {
 
 ```c++
 TEST_CASE("") {
+    assertion expression
     SECTION("S1") {
         assertion expression
         assertion expression
@@ -96,6 +97,7 @@ TEST_CASE("") {
         assertion expression
         assertion expression
     }
+    assertion expression
 }
 ```
 

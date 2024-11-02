@@ -37,7 +37,7 @@ report any failures and a summary of how many tests passed and failed.
 After compile and run cycle, we will see two test failures. 
 The output will look something like:
 
-```txt
+```
 AyTest-Mini v1.0.0
 
 --------------------------------------------------------------------------------
@@ -83,6 +83,7 @@ Note that section can not be nested or in a cycle!
 
 ```c++
 TEST_CASE("") {
+    assertion expression
     SECTION("S1") {
         assertion expression
         assertion expression
@@ -91,6 +92,7 @@ TEST_CASE("") {
         assertion expression
         assertion expression
     }
+    assertion expression
 }
 ```
 
