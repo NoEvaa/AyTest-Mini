@@ -329,8 +329,7 @@ struct TestConfig {
 class TestContext {
 public:
     static int run() {
-        getGroup().run();
-        return 0;
+        return getGroup().run() ? 0 : 1;
     }
     static TestConfig & getConfig() {
         static TestConfig s_config;
@@ -576,7 +575,7 @@ int main(int argc, char** argv) {
     TestContext::getConfig().getOStream()
         << "AyTest-Mini v" << AYTESTM_VERSION
         << '\n' << std::endl;
-    return TestContext::run() ? 0 : 1;
+    return TestContext::run();
 }
 #endif
 
