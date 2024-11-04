@@ -46,7 +46,7 @@
 #include <iostream>
 #include <iomanip>
 
-#define AYTESTM_VERSION "1.0.0"
+#define AYTESTM_VERSION "1.0.1"
 
 #if !defined(AYTESTM_DISABLE_TEST_MACRO)
 #define TEST_CASE(case_name, ...)       AYTTM_TEST_CASE(case_name, __VA_ARGS__)
@@ -304,7 +304,7 @@ using TestCases = std::vector<std::shared_ptr<TestCase>>;
 
 class TestGroup {
 public:
-    void run();
+    bool run();
     void appendCase(std::shared_ptr<TestCase> p_tc) {
         assert(p_tc);
         m_cases.push_back(p_tc);
@@ -553,7 +553,7 @@ inline bool TestCase::nextSection() {
     return m_section_lock.nextKey();
 }
 
-inline void TestGroup::run() {
+inline bool TestGroup::run() {
     TestCount case_res;
     TestCount expr_res;
     for (auto & p_tcase : m_cases) {
@@ -566,6 +566,7 @@ inline void TestGroup::run() {
     ost << "test cases: " << case_res << '\n'
         << "assertions: " << expr_res << '\n'
         << std::endl;
+    return case_res.failed_ == 0;
 }
 }
 #ifdef AYTESTM_CONFIG_MAIN
@@ -575,7 +576,7 @@ int main(int argc, char** argv) {
     TestContext::getConfig().getOStream()
         << "AyTest-Mini v" << AYTESTM_VERSION
         << '\n' << std::endl;
-    return TestContext::run();
+    return TestContext::run() ? 0 : 1;
 }
 #endif
 
